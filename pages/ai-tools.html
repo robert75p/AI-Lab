@@ -959,9 +959,17 @@ document.getElementById('json-input').addEventListener('input', ()=>{
     snapCanvas.width = 160; snapCanvas.height = 120;
     var snapCtx = snapCanvas.getContext('2d');
 
-    // Try WebGL first, fall back to CPU if hardware acceleration is unavailable
-    var backendReady = tf.setBackend('webgl').then(function() { return tf.ready(); })
-      .catch(function() { return tf.setBackend('cpu').then(function() { return tf.ready(); }); });
+    // Try WebGL, fall back to CPU if unavailable
+    var backendReady;
+    try {
+      var canvas = document.createElement('canvas');
+      var gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
+      if (!gl) throw new Error('no webgl');
+      backendReady = tf.setBackend('webgl').then(function() { return tf.ready(); })
+        .catch(function() { return tf.setBackend('cpu').then(function() { return tf.ready(); }); });
+    } catch(e) {
+      backendReady = tf.setBackend('cpu').then(function() { return tf.ready(); });
+    }
     backendReady.then(function() {
       return window.handPoseDetection.createDetector(
         window.handPoseDetection.SupportedModels.MediaPipeHands,
