@@ -1,0 +1,1219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Tools â AI Labs</title>
+<script src="/vendor/tailwind.js"></script>
+<link rel="stylesheet" href="/vendor/fonts.css">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background-color: #0A1F44;
+  font-family: 'Inter', sans-serif;
+  color: #F1F5F9;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+body::after {
+  content: ''; position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none; z-index: 0; opacity: 0.5;
+}
+.ambient {
+  position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background:
+    radial-gradient(ellipse 60% 50% at 65% 10%, rgba(20,184,166,0.11) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at 15% 85%, rgba(37,99,235,0.08) 0%, transparent 55%);
+}
+.page-wrap { position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 0 32px; }
+
+.nav {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 24px 0; border-bottom: 1px solid rgba(20,184,166,0.12);
+}
+.back-link {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: 'JetBrains Mono', monospace; font-size: 11px;
+  letter-spacing: 0.08em; color: #14B8A6; text-decoration: none;
+  transition: gap 0.2s ease;
+}
+.back-link:hover { gap: 12px; }
+.nav-badge {
+  display: flex; align-items: center; gap: 6px; padding: 4px 10px;
+  border-radius: 999px; background: rgba(20,184,166,0.1); border: 1px solid rgba(20,184,166,0.2);
+  font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #14B8A6; letter-spacing: 0.06em;
+}
+.nav-dot { width: 6px; height: 6px; border-radius: 50%; background: #14B8A6; animation: pulse-dot 2s ease-in-out infinite; }
+
+.page-hero { padding: 48px 0 40px; }
+.page-tag { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.12em; color: #334155; margin-bottom: 16px; }
+.page-heading {
+  font-family: 'Poppins', sans-serif; font-weight: 800;
+  font-size: clamp(32px, 4vw, 52px); letter-spacing: -0.03em; line-height: 1.05;
+  background: linear-gradient(130deg, #F1F5F9 0%, #14B8A6 70%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text; margin-bottom: 16px;
+}
+.page-desc { font-size: 16px; line-height: 1.75; color: #334155; max-width: 560px; }
+
+/* Tool Tabs */
+.tool-tabs { display: flex; gap: 8px; margin: 32px 0 0; }
+.tool-tab {
+  padding: 10px 20px; border-radius: 8px; cursor: pointer;
+  font-family: 'JetBrains Mono', monospace; font-size: 11px;
+  letter-spacing: 0.06em; border: 1px solid transparent;
+  transition: all 0.2s ease;
+  background: rgba(30,41,59,0.7);
+  border-color: rgba(37,99,235,0.12);
+  color: #334155;
+}
+.tool-tab.active {
+  background: rgba(37,99,235,0.12);
+  border-color: rgba(20,184,166,0.4);
+  color: #14B8A6;
+}
+.tool-tab:hover:not(.active) { border-color: rgba(37,99,235,0.25); color: #F1F5F9; }
+
+.tool-panel { display: none; margin: 20px 0 40px; }
+.tool-panel.active { display: block; }
+
+/* JSON Builder */
+.json-editor-wrap {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+}
+.panel-box {
+  background: linear-gradient(140deg, rgba(30,41,59,0.9), rgba(10,31,68,0.95));
+  border: 1px solid rgba(37,99,235,0.15); border-radius: 12px; padding: 20px;
+}
+.panel-label {
+  font-family: 'JetBrains Mono', monospace; font-size: 10px;
+  letter-spacing: 0.1em; color: #14B8A6; margin-bottom: 12px;
+}
+.json-textarea {
+  width: 100%; background: rgba(10,31,68,0.8); border: 1px solid rgba(37,99,235,0.15);
+  border-radius: 8px; padding: 14px; color: #38BDF8;
+  font-family: 'JetBrains Mono', monospace; font-size: 12px; line-height: 1.7;
+  resize: vertical; outline: none; min-height: 260px;
+  transition: border-color 0.2s ease;
+}
+.json-textarea:focus { border-color: rgba(20,184,166,0.4); }
+.json-output {
+  background: rgba(10,31,68,0.8); border: 1px solid rgba(37,99,235,0.15);
+  border-radius: 8px; padding: 14px; min-height: 260px;
+  font-family: 'JetBrains Mono', monospace; font-size: 12px; line-height: 1.7;
+  overflow: auto;
+}
+.j-key   { color: #38BDF8; }
+.j-str   { color: #14B8A6; }
+.j-num   { color: #F1F5F9; }
+.j-bool  { color: #2563EB; }
+.j-null  { color: #334155; }
+.j-punc  { color: #334155; }
+
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 18px; border-radius: 8px; cursor: pointer;
+  font-family: 'JetBrains Mono', monospace; font-size: 11px;
+  letter-spacing: 0.06em; border: 1px solid rgba(20,184,166,0.25);
+  background: rgba(20,184,166,0.1); color: #14B8A6;
+  margin-top: 12px; transition: background 0.2s ease;
+}
+.btn:hover { background: rgba(20,184,166,0.2); }
+
+/* Diagram Builder */
+.diagram-canvas-wrap {
+  background: linear-gradient(140deg, rgba(30,41,59,0.9), rgba(10,31,68,0.95));
+  border: 1px solid rgba(37,99,235,0.15); border-radius: 12px; padding: 20px;
+}
+.diagram-toolbar {
+  display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap;
+}
+.diagram-btn {
+  padding: 6px 14px; border-radius: 6px;
+  font-family: 'JetBrains Mono', monospace; font-size: 10px;
+  letter-spacing: 0.06em; cursor: pointer;
+  background: rgba(37,99,235,0.1); border: 1px solid rgba(37,99,235,0.2);
+  color: #38BDF8; transition: background 0.2s ease;
+}
+.diagram-btn:hover { background: rgba(37,99,235,0.2); }
+.diagram-btn.active { background: rgba(37,99,235,0.25); border-color: rgba(56,189,248,0.4); }
+
+/* FIX Lookup */
+.fix-search-wrap {
+  display: flex; gap: 10px; margin-bottom: 20px;
+  background: rgba(10,31,68,0.8); border: 1px solid rgba(37,99,235,0.2);
+  border-radius: 10px; padding: 12px 16px;
+}
+.fix-input {
+  flex: 1; background: transparent; border: none; outline: none;
+  font-family: 'JetBrains Mono', monospace; font-size: 14px; color: #F1F5F9;
+}
+.fix-input::placeholder { color: #334155; }
+.fix-table { width: 100%; border-collapse: collapse; }
+.fix-table th {
+  font-family: 'JetBrains Mono', monospace; font-size: 9px;
+  letter-spacing: 0.1em; color: #334155; text-align: left;
+  padding: 8px 12px; border-bottom: 1px solid rgba(37,99,235,0.12);
+}
+.fix-table td {
+  padding: 10px 12px; font-size: 12px;
+  border-bottom: 1px solid rgba(37,99,235,0.07);
+  transition: background 0.15s;
+}
+.fix-table tr:hover td { background: rgba(37,99,235,0.05); }
+.fix-tag { font-family: 'JetBrains Mono', monospace; color: #38BDF8; }
+.fix-name { color: #F1F5F9; font-weight: 500; }
+.fix-desc { color: #334155; font-size: 11px; }
+.fix-type { font-family: 'JetBrains Mono', monospace; font-size: 10px; }
+
+/* ââ Xianxia Interactive Panel ââ */
+.xianxia-wrap {
+  position: relative; width: 100%; height: 580px;
+  border-radius: 12px; overflow: hidden; background: #000814;
+  border: 1px solid rgba(0,240,255,0.18);
+  box-shadow: 0 0 60px rgba(0,240,255,0.05), inset 0 0 120px rgba(0,0,20,0.5);
+}
+.xianxia-wrap:fullscreen, .xianxia-wrap:-webkit-full-screen { height: 100vh !important; border-radius: 0 !important; }
+#xianxia-canvas { position: absolute; inset: 0; width: 100% !important; height: 100% !important; display: block; }
+.xianxia-title {
+  position: absolute; top: 16px; left: 50%; transform: translateX(-50%);
+  z-index: 10; font-family: 'Poppins', sans-serif; font-size: 13px; font-weight: 700;
+  letter-spacing: 0.04em; color: #FFD700; white-space: nowrap; pointer-events: none;
+  text-shadow: 0 0 18px rgba(255,215,0,0.9), 0 0 40px rgba(255,160,0,0.5), 0 0 80px rgba(255,100,0,0.25);
+}
+.gesture-status {
+  position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%);
+  z-index: 10; font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 600;
+  letter-spacing: 0.08em; color: #00f0ff; pointer-events: none; white-space: nowrap;
+  text-shadow: 0 0 16px rgba(0,240,255,0.9), 0 0 40px rgba(0,240,255,0.4);
+  background: rgba(0,8,20,0.65); padding: 8px 20px; border-radius: 8px;
+  text-shadow: 0 0 12px rgba(0,240,255,0.7);
+}
+#webcam-overlay {
+  position: absolute; bottom: 46px; right: 16px; width: 160px; height: 120px;
+  border-radius: 8px; border: 1px solid rgba(0,240,255,0.3); z-index: 10; opacity: 0.75;
+}
+#webcam-feed { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; top: 0; left: 0; }
+.xianxia-maximize {
+  position: absolute; top: 14px; right: 16px; z-index: 10; width: 36px; height: 36px;
+  border-radius: 8px; background: rgba(0,0,20,0.75); border: 1px solid rgba(0,240,255,0.3);
+  color: #00f0ff; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+.xianxia-maximize:hover { background: rgba(0,240,255,0.15); border-color: rgba(0,240,255,0.7); }
+.gesture-legend {
+  position: absolute; top: 56px; left: 16px; z-index: 10;
+  font-family: 'JetBrains Mono', monospace; font-size: 9px;
+  letter-spacing: 0.04em; color: rgba(0,240,255,0.4); line-height: 1.95; pointer-events: none;
+}
+@keyframes pulse-dot { 0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.3)} }
+@keyframes fade-up { from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)} }
+.fade-up { animation: fade-up 0.6s cubic-bezier(0.16,1,0.3,1) both; }
+.d1{animation-delay:.1s}
+</style>
+</head>
+<body>
+<div class="ambient"></div>
+<div class="page-wrap">
+
+  <nav class="nav">
+    <a href="../index.html" class="back-link">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+      BACK TO LABS
+    </a>
+    <div class="nav-badge"><div class="nav-dot"></div>AI TOOLS MODULE</div>
+  </nav>
+
+  <div class="page-hero fade-up">
+    <div class="page-tag">MODULE 05 / AI TOOLS</div>
+    <h1 class="page-heading">Essential Utilities<br>for AI Workflows</h1>
+    <p class="page-desc">JSON Builder, custom diagram builder, and FIX tag lookup in ATHENA â precision tools built for data-intensive, AI-powered environments.</p>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tool-tabs fade-up d1">
+    <div class="tool-tab active" onclick="switchTab('json', this)">JSON BUILDER</div>
+    <div class="tool-tab" onclick="switchTab('diagram', this)">DIAGRAM BUILDER</div>
+    <div class="tool-tab" onclick="switchTab('fix', this)">FIX TAG LOOKUP</div>
+    <div class="tool-tab" onclick="switchTab('interactive', this)">INTERACTIVE DATA</div>
+  </div>
+
+  <!-- ââ TOOL 1: JSON Builder ââ -->
+  <div id="panel-json" class="tool-panel active">
+    <div class="json-editor-wrap">
+      <div class="panel-box">
+        <div class="panel-label">INPUT / EDITOR</div>
+        <textarea class="json-textarea" id="json-input" placeholder='Enter or paste JSON here...'>{
+  "project": "AI Labs",
+  "version": "2.4.0",
+  "modules": [
+    {
+      "id": "jira-ai",
+      "name": "JIRA AI Automation",
+      "status": "active",
+      "capacity": 0.96
+    },
+    {
+      "id": "ai-topics",
+      "name": "Knowledge Graph",
+      "status": "active",
+      "nodes": 142
+    }
+  ],
+  "meta": {
+    "created": "2026-03-28",
+    "author": "AI Labs",
+    "env": "production"
+  }
+}</textarea>
+        <button class="btn" onclick="formatJSON()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+          FORMAT &amp; VALIDATE
+        </button>
+      </div>
+      <div class="panel-box">
+        <div class="panel-label">FORMATTED OUTPUT</div>
+        <div class="json-output" id="json-output"></div>
+        <button class="btn" onclick="copyJSON()" style="border-color:rgba(37,99,235,0.3);background:rgba(37,99,235,0.1);color:#38BDF8;">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+          COPY OUTPUT
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ââ TOOL 2: Diagram Builder ââ -->
+  <div id="panel-diagram" class="tool-panel">
+    <div class="diagram-canvas-wrap">
+      <div class="panel-label">CUSTOM DIAGRAM BUILDER</div>
+      <div class="diagram-toolbar">
+        <div class="diagram-btn active" id="tool-node" onclick="setTool('node',this)">+ NODE</div>
+        <div class="diagram-btn" id="tool-edge" onclick="setTool('edge',this)">CONNECT</div>
+        <div class="diagram-btn" id="tool-select" onclick="setTool('select',this)">SELECT</div>
+        <div class="diagram-btn" style="margin-left:auto;" onclick="clearDiagram()">CLEAR</div>
+        <div class="diagram-btn" onclick="exportDiagram()">EXPORT SVG</div>
+      </div>
+      <canvas id="diagram-canvas" style="width:100%;height:420px;display:block;border-radius:8px;border:1px solid rgba(37,99,235,0.1);background:rgba(10,31,68,0.6);cursor:crosshair;"></canvas>
+      <div style="margin-top:12px;font-family:'JetBrains Mono',monospace;font-size:10px;color:#334155;">
+        Click to place nodes Â· Select CONNECT then click two nodes to draw an edge Â· Double-click node to label it
+      </div>
+    </div>
+  </div>
+
+  <!-- ââ TOOL 3: FIX Tag Lookup ââ -->
+  <div id="panel-fix" class="tool-panel">
+    <div class="panel-box">
+      <div class="panel-label">FIX TAG LOOKUP â ATHENA</div>
+      <div class="fix-search-wrap">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#334155" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input class="fix-input" type="text" id="fix-search" placeholder="Search by tag number or name â e.g. '35', 'MsgType', 'ClOrdID'..." oninput="filterFIX(this.value)"/>
+        <div style="padding:5px 12px;border-radius:6px;background:rgba(20,184,166,0.1);border:1px solid rgba(20,184,166,0.25);font-family:'JetBrains Mono',monospace;font-size:10px;color:#14B8A6;cursor:pointer;">LOOKUP</div>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="fix-table" id="fix-table">
+          <thead>
+            <tr>
+              <th>TAG</th>
+              <th>NAME</th>
+              <th>TYPE</th>
+              <th>DESCRIPTION</th>
+              <th>ATHENA VALUE</th>
+            </tr>
+          </thead>
+          <tbody id="fix-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ââ TOOL 4: Interactive Data â Cyber Xianxia ââ -->
+  <div id="panel-interactive" class="tool-panel">
+    <div class="xianxia-wrap" id="xianxia-wrap">
+      <div class="xianxia-title">&diams;&nbsp;&nbsp;TRABA Bonus 2026 &mdash; It's yours if you can grab it!&nbsp;&nbsp;&diams;</div>
+      <canvas id="xianxia-canvas"></canvas>
+      <video id="webcam-feed" autoplay playsinline muted></video>
+      <canvas id="webcam-overlay"></canvas>
+      <div id="gesture-ref" style="
+        position:absolute; bottom:46px; right:184px; z-index:10; width:220px;
+        background:rgba(0,8,20,0.82); border:1px solid rgba(0,240,255,0.2);
+        border-radius:8px; padding:10px 14px; font-family:'JetBrains Mono',monospace;
+        font-size:9.5px; line-height:1.9; color:rgba(0,240,255,0.55);
+        display:none;
+      ">
+        <div style="color:rgba(0,240,255,0.9);font-size:9px;letter-spacing:0.12em;margin-bottom:6px;">GESTURE GUIDE</div>
+        <div id="gr-open"   style="transition:color 0.15s,text-shadow 0.15s;">OPEN PALM &nbsp;&rarr; Fan arc 180&deg;</div>
+        <div id="gr-fist"   style="transition:color 0.15s,text-shadow 0.15s;">FIST &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rarr; Gather / attack</div>
+        <div id="gr-point"  style="transition:color 0.15s,text-shadow 0.15s;">POINT &nbsp;&nbsp;&nbsp;&nbsp;&rarr; Beam strike</div>
+        <div id="gr-v"      style="transition:color 0.15s,text-shadow 0.15s;">V-SIGN &nbsp;&nbsp;&nbsp;&rarr; 90&deg; arc sweep</div>
+        <div id="gr-thumb"  style="transition:color 0.15s,text-shadow 0.15s;">THUMB UP &nbsp;&rarr; Bonus revealed!</div>
+        <div id="gr-two"    style="transition:color 0.15s,text-shadow 0.15s;">2 OPEN FAR &rarr; Disperse sphere</div>
+        <div id="gr-vortex" style="transition:color 0.15s,text-shadow 0.15s;">2 OPEN NEAR&rarr; Vortex spiral</div>
+        <div id="gr-merge"  style="transition:color 0.15s,text-shadow 0.15s;">WRISTS CLOSE&rarr; Merge column</div>
+      </div>
+      <div class="gesture-status" id="gesture-status">â¦ ACTIVATE TAB TO INITIALIZE â¦</div>
+      <button class="xianxia-maximize" onclick="toggleFullscreen()" title="Maximize â Full Experience">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3"/></svg>
+      </button>
+      <div class="gesture-legend">
+        <div>OPEN PALM &rarr; DISPERSE / FAN</div>
+        <div>FIST &rarr; GATHER / ATTACK</div>
+        <div>POINT &rarr; BEAM STRIKE</div>
+        <div>V-SIGN &rarr; 90&deg; ARC</div>
+        <div>THUMB UP &rarr; BONUS!</div>
+        <div>TWO OPEN &rarr; VORTEX</div>
+        <div>HANDS CLOSE &rarr; MERGE</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ââ Tab switching ââ
+function switchTab(id, el) {
+  document.querySelectorAll('.tool-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tool-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('panel-'+id).classList.add('active');
+  el.classList.add('active');
+  if (id === 'interactive') initXianxia();
+}
+
+// ââ JSON Builder ââ
+function syntaxHL(json) {
+  return json
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, m => {
+      let cls = 'j-num';
+      if (/^"/.test(m)) { cls = /:$/.test(m) ? 'j-key' : 'j-str'; }
+      else if (/true|false/.test(m)) cls = 'j-bool';
+      else if (/null/.test(m)) cls = 'j-null';
+      return `<span class="${cls}">${m}</span>`;
+    });
+}
+
+function formatJSON() {
+  const input = document.getElementById('json-input').value;
+  const out = document.getElementById('json-output');
+  try {
+    const parsed = JSON.parse(input);
+    const pretty = JSON.stringify(parsed, null, 2);
+    out.innerHTML = syntaxHL(pretty).replace(/\n/g,'<br>').replace(/ /g,'&nbsp;');
+    out.style.border = '1px solid rgba(20,184,166,0.3)';
+  } catch(e) {
+    out.innerHTML = `<span style="color:#EF4444;font-size:11px;">â Invalid JSON: ${e.message}</span>`;
+    out.style.border = '1px solid rgba(239,68,68,0.3)';
+  }
+}
+
+function copyJSON() {
+  const out = document.getElementById('json-output');
+  const text = out.innerText;
+  navigator.clipboard.writeText(text).catch(()=>{});
+}
+
+// Auto-format on load
+window.addEventListener('load', formatJSON);
+document.getElementById('json-input').addEventListener('input', ()=>{
+  clearTimeout(window._jt);
+  window._jt = setTimeout(formatJSON, 400);
+});
+
+// ââ Diagram Builder ââ
+(function(){
+  const canvas = document.getElementById('diagram-canvas');
+  if (!canvas) return;
+  const W = canvas.parentElement.clientWidth || 800;
+  const H = 420;
+  const DPR = window.devicePixelRatio || 1;
+  canvas.width = W * DPR; canvas.height = H * DPR;
+  canvas.style.width = W+'px'; canvas.style.height = H+'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(DPR, DPR);
+
+  let currentTool = 'node';
+  let nodes = [
+    { id:0, x:180, y:150, label:'Start',     col:'#38BDF8' },
+    { id:1, x:420, y:120, label:'Process',   col:'#14B8A6' },
+    { id:2, x:620, y:200, label:'Decision',  col:'#2563EB' },
+    { id:3, x:420, y:280, label:'Output',    col:'#38BDF8' },
+  ];
+  let edges = [[0,1],[1,2],[2,3],[1,3]];
+  let nextId = 4;
+  let edgeStart = null;
+  let drag = null;
+
+  window.setTool = function(t, el) {
+    currentTool = t; edgeStart = null;
+    document.querySelectorAll('.diagram-btn').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    canvas.style.cursor = t === 'node' ? 'crosshair' : 'default';
+  };
+
+  window.clearDiagram = function() { nodes=[]; edges=[]; nextId=0; render(); };
+  window.exportDiagram = function() { alert('SVG export â connect to backend to generate'); };
+
+  function findNode(x, y) {
+    return nodes.find(n => Math.hypot(n.x-x, n.y-y) < 22);
+  }
+
+  function render() {
+    ctx.clearRect(0,0,W,H);
+    // Edges
+    for (const [a,b] of edges) {
+      const na = nodes.find(n=>n.id===a), nb = nodes.find(n=>n.id===b);
+      if (!na || !nb) continue;
+      ctx.beginPath();
+      ctx.moveTo(na.x, na.y); ctx.lineTo(nb.x, nb.y);
+      ctx.strokeStyle = 'rgba(37,99,235,0.35)'; ctx.lineWidth=1.5; ctx.stroke();
+      // Arrow
+      const angle = Math.atan2(nb.y-na.y, nb.x-na.x);
+      const ex = nb.x - 24*Math.cos(angle), ey = nb.y - 24*Math.sin(angle);
+      ctx.beginPath();
+      ctx.moveTo(ex, ey);
+      ctx.lineTo(ex-10*Math.cos(angle-0.4), ey-10*Math.sin(angle-0.4));
+      ctx.lineTo(ex-10*Math.cos(angle+0.4), ey-10*Math.sin(angle+0.4));
+      ctx.closePath(); ctx.fillStyle='rgba(37,99,235,0.5)'; ctx.fill();
+    }
+    // Nodes
+    for (const n of nodes) {
+      // Glow
+      const g = ctx.createRadialGradient(n.x,n.y,0,n.x,n.y,32);
+      const _c=n.col.replace('#','');const _r=parseInt(_c.slice(0,2),16),_g=parseInt(_c.slice(2,4),16),_b=parseInt(_c.slice(4,6),16);
+      g.addColorStop(0,'rgba('+_r+','+_g+','+_b+',0.18)');
+      g.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(n.x,n.y,32,0,Math.PI*2); ctx.fill();
+      // Circle
+      ctx.beginPath(); ctx.arc(n.x,n.y,22,0,Math.PI*2);
+      ctx.fillStyle='rgba(10,31,68,0.9)'; ctx.fill();
+      ctx.strokeStyle=n.col; ctx.lineWidth=2; ctx.stroke();
+      // Label
+      ctx.font='10px JetBrains Mono,monospace'; ctx.fillStyle=n.col;
+      ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(n.label,n.x,n.y);
+    }
+    // Edge-start highlight
+    if (edgeStart) {
+      const n = nodes.find(nd=>nd.id===edgeStart);
+      if (n) { ctx.beginPath(); ctx.arc(n.x,n.y,26,0,Math.PI*2); ctx.strokeStyle='rgba(56,189,248,0.6)'; ctx.lineWidth=2; ctx.stroke(); }
+    }
+  }
+
+  canvas.addEventListener('click', e => {
+    const r = canvas.getBoundingClientRect();
+    const x = (e.clientX - r.left), y = (e.clientY - r.top);
+    if (currentTool === 'node') {
+      const colors = ['#38BDF8','#14B8A6','#2563EB'];
+      nodes.push({ id:nextId++, x, y, label:'Node', col: colors[nextId%3] });
+    } else if (currentTool === 'edge') {
+      const hit = findNode(x, y);
+      if (hit) {
+        if (edgeStart === null) { edgeStart = hit.id; }
+        else { if (hit.id !== edgeStart) edges.push([edgeStart, hit.id]); edgeStart = null; }
+      }
+    }
+    render();
+  });
+
+  canvas.addEventListener('dblclick', e => {
+    const r = canvas.getBoundingClientRect();
+    const x = (e.clientX - r.left), y = (e.clientY - r.top);
+    const hit = findNode(x,y);
+    if (hit) { const lbl = prompt('Node label:', hit.label); if (lbl !== null) hit.label = lbl; render(); }
+  });
+
+  render();
+})();
+
+// ââ FIX Tag Lookup ââ
+(function(){
+  const FIX_DATA = [
+    { tag:'8',  name:'BeginString',  type:'STRING', desc:'Identifies beginning of new message', athena:'FIX.4.4' },
+    { tag:'9',  name:'BodyLength',   type:'LENGTH', desc:'Message body length', athena:'AUTO' },
+    { tag:'35', name:'MsgType',      type:'STRING', desc:'Defines message type', athena:'D=NewOrder, 8=Exec' },
+    { tag:'11', name:'ClOrdID',      type:'STRING', desc:'Unique identifier for Order', athena:'TRAB-{timestamp}' },
+    { tag:'38', name:'OrderQty',     type:'QTY',    desc:'Quantity ordered', athena:'DECIMAL(18,6)' },
+    { tag:'40', name:'OrdType',      type:'CHAR',   desc:'Order type', athena:'1=Market, 2=Limit' },
+    { tag:'44', name:'Price',        type:'PRICE',  desc:'Price per unit of quantity', athena:'DECIMAL(18,8)' },
+    { tag:'49', name:'SenderCompID', type:'STRING', desc:'Assigned value of sender', athena:'TRABA_EU' },
+    { tag:'52', name:'SendingTime',  type:'UTCTIMESTAMP', desc:'Time of message transmission', athena:'UTC ISO-8601' },
+    { tag:'54', name:'Side',         type:'CHAR',   desc:'Side of order', athena:'1=Buy, 2=Sell' },
+    { tag:'55', name:'Symbol',       type:'STRING', desc:'Ticker symbol', athena:'EUTF VARCHAR(20)' },
+    { tag:'56', name:'TargetCompID', type:'STRING', desc:'Assigned value of target', athena:'MARKET_MAKER' },
+    { tag:'58', name:'Text',         type:'STRING', desc:'Free format text', athena:'VARCHAR(256)' },
+    { tag:'60', name:'TransactTime', type:'UTCTIMESTAMP', desc:'Time of transaction', athena:'UTC ISO-8601' },
+    { tag:'150',name:'ExecType',     type:'CHAR',   desc:'Describes the purpose of the execution report', athena:'0=New, 2=Filled' },
+    { tag:'151',name:'LeavesQty',    type:'QTY',    desc:'Quantity open for further execution', athena:'DECIMAL(18,6)' },
+  ];
+
+  window._fixData = FIX_DATA;
+
+  function renderTable(data) {
+    const tbody = document.getElementById('fix-tbody');
+    if (!tbody) return;
+    tbody.innerHTML = data.map(r => `
+      <tr>
+        <td><span class="fix-tag">${r.tag}</span></td>
+        <td><span class="fix-name">${r.name}</span></td>
+        <td><span class="fix-type" style="color:#334155;">${r.type}</span></td>
+        <td><span class="fix-desc">${r.desc}</span></td>
+        <td><span class="fix-tag" style="color:#14B8A6;font-size:10px;">${r.athena}</span></td>
+      </tr>
+    `).join('');
+  }
+
+  window.filterFIX = function(query) {
+    const q = query.toLowerCase();
+    const filtered = window._fixData.filter(r =>
+      r.tag.includes(q) || r.name.toLowerCase().includes(q) || r.desc.toLowerCase().includes(q)
+    );
+    renderTable(filtered);
+  };
+
+  renderTable(FIX_DATA);
+})();
+</script>
+
+<!-- ── Xianxia script in its own block so diagram-builder errors don't block it ── -->
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// INTERACTIVE DATA — Cyber Xianxia: Wan Jian Gui Zong
+// Unique (APP_CODE, DEST_ID, ORDER_MGMT_SYS_CODE) triplets as nodes.
+// ─────────────────────────────────────────────────────────────────────────────
+(function(){
+
+  const BONUS_LABEL = 'MY BONUS';
+
+  let initialized = false;
+  let scene, camera, renderer, clock;
+  let nodeData = [];
+  let currentGesture = 'IDLE';
+  let gestureInfo = {};
+  let allNodes = [];
+
+  // ── Entry point ─────────────────────────────────────────────────────────────
+  window.initXianxia = function() {
+    if (initialized) return;
+    initialized = true;
+    setStatus('⟳ LOADING DATA...');
+
+    fetch('/data/xianxia_flat.json')
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        allNodes = data;
+        setStatus('⟳ LOADING THREE.JS...');
+        var s3 = document.createElement('script');
+        s3.src = '/vendor/three.min.js';
+        s3.onload = function() {
+          setStatus('⟳ LOADING HAND DETECTION...');
+          function loadScript(src, cb, err) {
+            var s = document.createElement('script'); s.src = src;
+            s.onload = cb; s.onerror = err; document.head.appendChild(s);
+          }
+          // Local vendor copies — no internet required
+          var TF_FULL  = '/vendor/tf.min.js';
+          var TF_HANDS = '/vendor/hand-pose-detection.min.js';
+          var onErr = function() { buildScene(); setStatus('✦ IDLE — GESTURE CONTROL UNAVAILABLE'); };
+          loadScript(TF_FULL, function() {
+            loadScript(TF_HANDS, function() { buildScene(); startWebcam(); }, onErr);
+          }, onErr);
+        };
+        s3.onerror = function() { initialized = false; setStatus('✗ COULD NOT LOAD THREE.JS'); };
+        document.head.appendChild(s3);
+      })
+      .catch(function() { setStatus('✗ COULD NOT LOAD DATA'); });
+  };
+
+  function setStatus(msg) {
+    var el = document.getElementById('gesture-status');
+    if (el) el.textContent = msg;
+  }
+
+  function hexToRGBA(hex, a) {
+    var r = parseInt(hex.slice(1,3),16);
+    var g = parseInt(hex.slice(3,5),16);
+    var b = parseInt(hex.slice(5,7),16);
+    return 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
+  }
+
+  // ── Sprite texture: 3 lines (APP / DEST / OMS), no border ──────────────────
+  function makeTexture(d, isBonus) {
+    if (isBonus) {
+      var bc = document.createElement('canvas');
+      bc.width = 160; bc.height = 36;
+      var bctx = bc.getContext('2d');
+      bctx.fillStyle = 'rgba(0,0,0,0)';
+      bctx.fillRect(0, 0, 160, 36);
+      bctx.font = 'bold 15px "Courier New", monospace';
+      bctx.textAlign = 'center'; bctx.textBaseline = 'middle';
+      bctx.fillStyle = '#FFE44D';
+      bctx.shadowBlur = 14; bctx.shadowColor = '#FFD700';
+      bctx.fillText(BONUS_LABEL, 80, 18);
+      return new THREE.CanvasTexture(bc);
+    }
+
+    // Measure widths for canvas sizing
+    var lines = [
+      { text: d.a || '—', color: '#FF8855', fs: 13 },
+      { text: d.d || '—', color: '#55DDFF', fs: 12 },
+      { text: d.o || '—', color: '#BB88FF', fs: 11 },
+    ];
+    var tmp = document.createElement('canvas').getContext('2d');
+    var maxW = 0;
+    lines.forEach(function(l) {
+      tmp.font = 'bold ' + l.fs + 'px "Courier New", monospace';
+      maxW = Math.max(maxW, tmp.measureText(l.text).width);
+    });
+
+    var padX = 10;
+    var W = Math.ceil(maxW + padX * 2);
+    var lineH = 17;
+    var H = lines.length * lineH + 8;
+
+    var c = document.createElement('canvas');
+    c.width = W; c.height = H;
+    var ctx = c.getContext('2d');
+
+    // Translucent dark background pill — no border
+    ctx.fillStyle = 'rgba(4,8,20,0.78)';
+    ctx.beginPath();
+    ctx.roundRect(0, 0, W, H, 5);
+    ctx.fill();
+
+    // Draw each line
+    lines.forEach(function(l, i) {
+      ctx.font = 'bold ' + l.fs + 'px "Courier New", monospace';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = l.color;
+      ctx.shadowBlur = 5; ctx.shadowColor = l.color;
+      ctx.fillText(l.text, W/2, 4 + lineH * i + lineH/2);
+    });
+
+    return new THREE.CanvasTexture(c);
+  }
+
+  // ── Three.js scene ──────────────────────────────────────────────────────────
+  function buildScene() {
+    var wrap   = document.getElementById('xianxia-wrap');
+    var canvas = document.getElementById('xianxia-canvas');
+    if (!wrap || !canvas || !window.THREE) return;
+
+    var W = wrap.clientWidth, H = wrap.clientHeight;
+    renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: false });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(W, H);
+    renderer.setClearColor(0x000814, 1);
+
+    scene  = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x000814, 0.004);
+    camera = new THREE.PerspectiveCamera(62, W/H, 0.1, 2000);
+    camera.position.set(0, 0, 200);
+    clock  = new THREE.Clock();
+
+    buildStarField();
+    buildNebula();
+
+    var freqs   = allNodes.map(function(d){ return d.n; });
+    var maxN    = Math.max.apply(null, freqs);
+    var minN    = Math.min.apply(null, freqs);
+    var logMax  = Math.log(maxN + 1);
+    var logMin  = Math.log(minN + 1);
+    var logRange = logMax - logMin || 1;
+
+    var entries = allNodes.concat([{ a:'MY', d:'BONUS', o:'', n:maxN, _bonus:true }]);
+
+    entries.forEach(function(d, i) {
+      var isBonus = !!d._bonus;
+      var tex = makeTexture(d, isBonus);
+      var mat = new THREE.SpriteMaterial({
+        map: tex, transparent: true,
+        opacity: isBonus ? 1.0 : 0.90,
+        depthTest: false, depthWrite: false,
+        blending: THREE.NormalBlending,
+      });
+      var sprite = new THREE.Sprite(mat);
+
+      var logN   = Math.log(d.n + 1);
+      var frac   = (logN - logMin) / logRange;
+      var baseH  = isBonus ? 28 : (16 + frac * 20);
+      var aspect = tex.image.width / tex.image.height;
+      sprite.scale.set(baseH * aspect, baseH, 1);
+
+      var theta = Math.random() * Math.PI * 2;
+      var phi   = Math.acos(2 * Math.random() - 1);
+      var r     = 60 + Math.random() * 90;
+      sprite.position.set(
+        r * Math.sin(phi) * Math.cos(theta),
+        r * Math.sin(phi) * Math.sin(theta) * 0.55,
+        r * Math.cos(phi) * 0.45 - 20
+      );
+      scene.add(sprite);
+
+      nodeData.push({
+        sprite: sprite, isBonus: isBonus,
+        target:     sprite.position.clone(),
+        phase:      Math.random() * Math.PI * 2,
+        phaseSpd:   0.3 + Math.random() * 0.7,
+        orbitR:     40 + Math.random() * 110,
+        orbitAngle: Math.random() * Math.PI * 2,
+        orbitY:     (Math.random() - 0.5) * 130,
+        orbitSpd:   (0.10 + Math.random() * 0.35) * (Math.random() < 0.5 ? 1 : -1),
+      });
+    });
+
+    window.addEventListener('resize', resizeXianxia);
+    animate();
+    setStatus('✦ IDLE FORMATION — ' + allNodes.length + ' UNIQUE ROUTES ACTIVE');
+  }
+
+  function buildStarField() {
+    var n = 4000;
+    var pos = new Float32Array(n * 3);
+    var col = new Float32Array(n * 3);
+    for (var i = 0; i < n; i++) {
+      pos[i*3]   = (Math.random()-0.5)*2600;
+      pos[i*3+1] = (Math.random()-0.5)*2600;
+      pos[i*3+2] = (Math.random()-0.5)*2600;
+      var b = 0.3 + Math.random()*0.7;
+      col[i*3] = b*0.65; col[i*3+1] = b*0.82; col[i*3+2] = b;
+    }
+    var geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    geo.setAttribute('color',    new THREE.BufferAttribute(col, 3));
+    scene.add(new THREE.Points(geo,
+      new THREE.PointsMaterial({ size:0.6, vertexColors:true, transparent:true, opacity:0.6 })
+    ));
+  }
+
+  function buildNebula() {
+    function gradTex(c1, c2) {
+      var nc = document.createElement('canvas'); nc.width = nc.height = 512;
+      var nctx = nc.getContext('2d');
+      var g = nctx.createRadialGradient(256,256,0,256,256,256);
+      g.addColorStop(0, c1); g.addColorStop(1, c2);
+      nctx.fillStyle = g; nctx.fillRect(0,0,512,512);
+      return new THREE.CanvasTexture(nc);
+    }
+    var pg = new THREE.PlaneGeometry(700,700);
+    function mk(t, x, y, z, rz) {
+      var m = new THREE.Mesh(pg, new THREE.MeshBasicMaterial({
+        map:t, transparent:true, side:THREE.DoubleSide, depthWrite:false,
+        blending:THREE.AdditiveBlending
+      }));
+      m.position.set(x,y,z); m.rotation.z = rz; scene.add(m);
+    }
+    mk(gradTex('rgba(0,22,65,0.22)','rgba(0,0,0,0)'),  -120, 60,-350, 0.3);
+    mk(gradTex('rgba(0,45,45,0.16)','rgba(0,0,0,0)'),   140,-70,-350,-0.22);
+    mk(gradTex('rgba(10,0,40,0.14)','rgba(0,0,0,0)'),    20, 20,-400, 0.0);
+  }
+
+  // ── Formation targets ────────────────────────────────────────────────────────
+  function setFormation(gesture) {
+    currentGesture = gesture;
+    var n = nodeData.length;
+    if (gesture === 'DISPERSE') {
+      nodeData.forEach(function(nd, i) {
+        var theta = (i/n)*Math.PI*2 + Math.random()*0.4;
+        var phi   = Math.acos(2*(i/n)-1);
+        var r     = 155 + Math.random()*30;
+        nd.target.set(r*Math.sin(phi)*Math.cos(theta), r*Math.sin(phi)*Math.sin(theta)*0.5, r*Math.cos(phi)*0.4-25);
+      });
+    } else if (gesture === 'GATHER') {
+      nodeData.forEach(function(nd) {
+        nd.target.set((Math.random()-0.5)*10,(Math.random()-0.5)*10,(Math.random()-0.5)*10-15);
+      });
+    } else if (gesture === 'BEAM') {
+      var cols = 14, rows = Math.ceil(n/cols);
+      nodeData.forEach(function(nd, i) {
+        var c = i%cols, row = Math.floor(i/cols);
+        nd.target.set((c-cols/2+0.5)*8,(row-rows/2+0.5)*7,-170+(i/n)*340);
+      });
+    } else if (gesture === 'VORTEX') {
+      nodeData.forEach(function(nd, i) {
+        var t = i/n, angle = t*Math.PI*2*5;
+        nd.target.set(Math.cos(angle)*(30+Math.sin(t*Math.PI)*70), t*240-120, Math.sin(angle)*(30+Math.sin(t*Math.PI)*70)*0.5-20);
+      });
+    } else if (gesture === 'FAN') {
+      nodeData.forEach(function(nd, i) {
+        var t = i/n, angle = t*Math.PI-Math.PI/2, r = 80+Math.random()*55;
+        nd.target.set(Math.cos(angle)*r,(Math.random()-0.5)*35,Math.sin(angle)*r*0.35-18);
+      });
+    } else if (gesture === 'MERGE') {
+      nodeData.forEach(function(nd, i) {
+        nd.target.set((Math.random()-0.5)*5,(i-n/2)*2.2,(Math.random()-0.5)*5-18);
+      });
+    } else if (gesture === 'POINT') {
+      var dir = gestureInfo.pointDir || {x:0,y:0,z:-1};
+      nodeData.forEach(function(nd, i) {
+        var t = i/n, sp = Math.sqrt(t)*16;
+        nd.target.set(dir.x*t*280+(Math.random()-0.5)*sp, dir.y*t*280+(Math.random()-0.5)*sp, dir.z*t*280-18);
+      });
+    } else if (gesture === 'TWO_FINGER') {
+      // 90-degree arc in the XY plane
+      nodeData.forEach(function(nd, i) {
+        var t = i/n;
+        var angle = t * Math.PI * 0.5 - Math.PI * 0.25; // -45deg to +45deg
+        var r = 60 + Math.random()*80;
+        nd.target.set(Math.cos(angle)*r, Math.sin(angle)*r, (Math.random()-0.5)*30-20);
+      });
+    } else if (gesture === 'THUMB_UP') {
+      // Bonus node flies forward centre-stage; all others scatter back
+      nodeData.forEach(function(nd, i) {
+        if (nd.isBonus) {
+          nd.target.set(0, 0, 60); // fly toward camera, front and centre
+        } else {
+          var theta = (i/n)*Math.PI*2 + Math.random()*0.5;
+          var r = 130 + Math.random()*40;
+          nd.target.set(Math.cos(theta)*r, (Math.random()-0.5)*80, Math.sin(theta)*r*0.4-60);
+        }
+      });
+    }
+  }
+
+  // ── Animation loop ───────────────────────────────────────────────────────────
+  function animate() {
+    requestAnimationFrame(animate);
+    var dt = Math.min(clock.getDelta(), 0.05);
+    var t  = clock.getElapsedTime();
+
+    camera.position.x = Math.sin(t*0.04)*10;
+    camera.position.y = Math.cos(t*0.026)*5;
+    camera.lookAt(0,0,-18);
+
+    var isIdle   = currentGesture === 'IDLE';
+    var isVortex = currentGesture === 'VORTEX';
+    var lerpFast = 1 - Math.pow(0.005, dt);
+    var lerpSlow = 1 - Math.pow(0.10,  dt);
+
+    if (isVortex) {
+      var n = nodeData.length;
+      nodeData.forEach(function(nd, i) {
+        var frac  = i/n, angle = frac*Math.PI*2*5 + t*1.3;
+        var h = frac*240-120 + Math.sin(t*0.4)*10;
+        var r = 30+Math.sin(frac*Math.PI+t*0.35)*70;
+        nd.target.set(Math.cos(angle)*r, h, Math.sin(angle)*r*0.5-20);
+      });
+    }
+
+    nodeData.forEach(function(nd) {
+      var sp = nd.sprite;
+      if (isIdle) {
+        nd.orbitAngle += nd.orbitSpd * dt;
+        var noiseY = Math.sin(t*nd.phaseSpd + nd.phase)*12;
+        sp.position.x += (Math.cos(nd.orbitAngle)*nd.orbitR - sp.position.x)*lerpSlow;
+        sp.position.y += (nd.orbitY + noiseY - sp.position.y)*lerpSlow;
+        sp.position.z += (Math.sin(nd.orbitAngle)*nd.orbitR*0.48-20 - sp.position.z)*lerpSlow;
+      } else {
+        sp.position.x += (nd.target.x - sp.position.x)*lerpFast + Math.sin(t*4.2+nd.phase)*0.06;
+        sp.position.y += (nd.target.y - sp.position.y)*lerpFast + Math.cos(t*3.7+nd.phase)*0.06;
+        sp.position.z += (nd.target.z - sp.position.z)*lerpFast;
+      }
+      if (nd.isBonus) {
+        var pulse = Math.sin(t*2.8+nd.phase);
+        sp.material.opacity = 0.85 + pulse*0.15;
+      } else {
+        var base = currentGesture==='GATHER' ? 0.95 : 0.80;
+        var amp  = currentGesture==='GATHER' ? 0.05 : 0.12;
+        sp.material.opacity = base + Math.sin(t*1.8+nd.phase)*amp;
+      }
+    });
+
+    renderer.render(scene, camera);
+  }
+
+  // ── Resize ───────────────────────────────────────────────────────────────────
+  function resizeXianxia() {
+    var wrap = document.getElementById('xianxia-wrap');
+    if (!wrap||!renderer||!camera) return;
+    var W = wrap.clientWidth, H = wrap.clientHeight;
+    renderer.setSize(W,H);
+    camera.aspect = W/H;
+    camera.updateProjectionMatrix();
+  }
+
+  window.toggleFullscreen = function() {
+    var wrap = document.getElementById('xianxia-wrap');
+    if (!wrap) return;
+    if (!document.fullscreenElement) {
+      wrap.requestFullscreen().then(function(){ setTimeout(resizeXianxia,150); }).catch(function(){});
+    } else {
+      document.exitFullscreen();
+    }
+  };
+
+  document.addEventListener('fullscreenchange', function() {
+    var wrap = document.getElementById('xianxia-wrap');
+    if (!wrap) return;
+    wrap.style.height = document.fullscreenElement===wrap ? '100vh' : '';
+    setTimeout(resizeXianxia,150);
+  });
+
+  // ── MediaPipe Webcam ─────────────────────────────────────────────────────────
+  function startWebcam() {
+    if (!window.handPoseDetection || !window.tf) return;
+    var videoEl   = document.getElementById('webcam-feed');
+    var overlayEl = document.getElementById('webcam-overlay');
+    if (!videoEl||!overlayEl) return;
+
+    // Offscreen canvas — pass canvas snapshot to detector (more reliable than raw video)
+    var snapCanvas = document.createElement('canvas');
+    snapCanvas.width = 160; snapCanvas.height = 120;
+    var snapCtx = snapCanvas.getContext('2d');
+
+    // Explicitly set WebGL backend and wait for it before creating detector
+    tf.setBackend('webgl').then(function() { return tf.ready(); }).then(function() {
+      return window.handPoseDetection.createDetector(
+        window.handPoseDetection.SupportedModels.MediaPipeHands,
+        { runtime: 'tfjs', modelType: 'full', maxHands: 2 }
+      );
+    }).then(function(detector) {
+      navigator.mediaDevices.getUserMedia({ video:{ width:320, height:240, facingMode:'user' } })
+        .then(function(stream) {
+          videoEl.srcObject = stream; videoEl.play();
+          overlayEl.width = 160; overlayEl.height = 120;
+          var lastSend = 0;
+          var INTERVAL = 67; // 15fps
+          function tick(ts) {
+            requestAnimationFrame(tick);
+            if (videoEl.readyState < 2 || videoEl.videoWidth === 0 || ts - lastSend < INTERVAL) return;
+            lastSend = ts;
+            // Draw video to offscreen canvas, pass that to detector
+            snapCtx.drawImage(videoEl, 0, 0, 160, 120);
+            detector.estimateHands(snapCanvas, { flipHorizontal: false }).then(function(results) {
+              // Draw video mirrored (natural mirror view for user), landmarks stay at raw coords
+              var ovCtx = overlayEl.getContext('2d');
+              if (ovCtx) {
+                ovCtx.save();
+                ovCtx.scale(-1, 1);
+                ovCtx.drawImage(snapCanvas, -160, 0, 160, 120);
+                ovCtx.restore();
+              }
+              processTFHands(results, 160, 120);
+            }).catch(function(){});
+          }
+          requestAnimationFrame(tick);
+          setStatus('✦ GESTURE CONTROL ACTIVE — SHOW YOUR HANDS');
+        })
+        .catch(function() { setStatus('✦ IDLE FORMATION — WEBCAM NOT AVAILABLE'); });
+    }).catch(function() { setStatus('✦ IDLE — DETECTOR FAILED TO LOAD'); });
+  }
+
+  // Adapter: converts TF.js hand-pose-detection results → same format as processHands
+  function processTFHands(hands, vidW, vidH) {
+    var overlay = document.getElementById('webcam-overlay');
+    var ctx = overlay ? overlay.getContext('2d') : null;
+    // video frame already drawn by tick(); just draw landmarks on top
+
+    if (!hands || hands.length === 0) {
+      if (currentGesture !== 'IDLE') setFormation('IDLE');
+      setStatus('✦ IDLE FORMATION — NO HANDS DETECTED');
+      highlightGesture(null);
+      return;
+    }
+
+    // Draw landmarks on overlay
+    if (ctx && hands.length) {
+      var scaleX = 160 / vidW;
+      var scaleY = 120 / vidH;
+      var connections = [
+        [0,1],[1,2],[2,3],[3,4],
+        [0,5],[5,6],[6,7],[7,8],
+        [0,9],[9,10],[10,11],[11,12],
+        [0,13],[13,14],[14,15],[15,16],
+        [0,17],[17,18],[18,19],[19,20]
+      ];
+      hands.forEach(function(hand) {
+        // Use keypoints3D scaled to canvas if 2D keypoints have null coords
+        var kps = hand.keypoints.map(function(kp, i) {
+          if (kp.x !== null && kp.x !== undefined) return kp;
+          var k3 = hand.keypoints3D && hand.keypoints3D[i];
+          return k3 ? { x: (k3.x + 0.5) * vidW, y: (k3.y + 0.5) * vidH } : kp;
+        });
+        // Lines
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = 'rgba(0,255,180,0.45)';
+        ctx.shadowBlur = 4; ctx.shadowColor = 'rgba(0,255,136,0.4)';
+        connections.forEach(function(c) {
+          var a = kps[c[0]], b = kps[c[1]];
+          if (!a || !b) return;
+          ctx.beginPath();
+          ctx.moveTo(160 - a.x * scaleX, a.y * scaleY);
+          ctx.lineTo(160 - b.x * scaleX, b.y * scaleY);
+          ctx.stroke();
+        });
+        // Dots — semi-transparent
+        ctx.shadowBlur = 8; ctx.shadowColor = 'rgba(0,240,255,0.4)';
+        kps.forEach(function(kp, i) {
+          var px = 160 - kp.x * scaleX, py = kp.y * scaleY;
+          ctx.beginPath();
+          ctx.arc(px, py, i === 0 ? 5 : 3.5, 0, Math.PI * 2);
+          ctx.fillStyle = i === 0 ? 'rgba(255,215,0,0.5)' : 'rgba(0,240,255,0.45)';
+          ctx.fill();
+        });
+        ctx.shadowBlur = 0;
+      });
+    }
+
+    // Normalize keypoints to 0-1 range (same as MediaPipe format)
+    function normalizeLandmarks(hand) {
+      // TF.js tfjs runtime: 2D coords in keypoints, 3D normalized in keypoints3D
+      // If x/y are null in keypoints, use keypoints3D (x/y already 0-1 normalized)
+      var kps = hand.keypoints;
+      var kps3d = hand.keypoints3D;
+      return kps.map(function(kp, i) {
+        var x = kp.x, y = kp.y;
+        if ((x === null || x === undefined) && kps3d && kps3d[i]) {
+          // keypoints3D x/y are -0.5..0.5, shift to 0..1
+          x = kps3d[i].x + 0.5;
+          y = kps3d[i].y + 0.5;
+        } else {
+          x = x / vidW;
+          y = y / vidH;
+        }
+        return { x: x, y: y };
+      });
+    }
+
+    var allHands = hands.map(function(h) { return normalizeLandmarks(h); });
+    var numHands = allHands.length;
+    var g1 = classifyHand(allHands[0]);
+    var newGesture;
+
+    if (numHands === 1) {
+      if (g1 === 'POINT') {
+        gestureInfo.pointDir = { x: -(allHands[0][8].x - 0.5)*2.2, y: -(allHands[0][8].y - 0.5)*2.2, z: -1 };
+        newGesture = 'POINT';
+      } else if (g1 === 'TWO_FINGER') { newGesture = 'TWO_FINGER'; }
+        else if (g1 === 'THUMB_UP')   { newGesture = 'THUMB_UP'; }
+        else if (g1 === 'OPEN')       { newGesture = 'FAN'; }
+        else if (g1 === 'FIST')       { newGesture = 'GATHER'; }
+        else                          { newGesture = 'BEAM'; }
+    } else {
+      var g2   = classifyHand(allHands[1]);
+      var dist = Math.hypot(allHands[0][0].x - allHands[1][0].x, allHands[0][0].y - allHands[1][0].y);
+      if      (g1 === 'OPEN' && g2 === 'OPEN') { newGesture = dist > 0.35 ? 'DISPERSE' : 'VORTEX'; }
+      else if (g1 === 'FIST' && g2 === 'FIST') { newGesture = 'GATHER'; }
+      else if (dist < 0.13)                     { newGesture = 'MERGE'; }
+      else                                      { newGesture = g1 === 'OPEN' ? 'FAN' : 'BEAM'; }
+    }
+
+    if (newGesture !== currentGesture) setFormation(newGesture);
+
+    var names = {
+      IDLE:'✦ IDLE FORMATION — NO HANDS DETECTED', DISPERSE:'Disperse — scatter sphere',
+      GATHER:'Gather / regroup', BEAM:'Beam pointing - toward finger direction',
+      VORTEX:'Vortex — spiral helix', FAN:'Fan arc — 180° spread',
+      MERGE:'Merge — single giant column', POINT:'Beam toward finger direction',
+      TWO_FINGER:'90° arc rotation sweep', THUMB_UP:'Bonus node flies front & center, all others scatter',
+    };
+    setStatus(names[newGesture] || ('✦ ' + newGesture));
+    highlightGesture(newGesture);
+  }
+
+  function processHands(results) {
+    var overlay = document.getElementById('webcam-overlay');
+    if (overlay && results.image) {
+      var ctx = overlay.getContext('2d');
+      ctx.drawImage(results.image, 0, 0, 160, 120);
+      if (results.multiHandLandmarks) {
+        for (var i = 0; i < results.multiHandLandmarks.length; i++) {
+          var lm = results.multiHandLandmarks[i];
+          for (var j = 0; j < lm.length; j++) {
+            ctx.beginPath();
+            ctx.arc(lm[j].x*160, lm[j].y*120, 2.5, 0, Math.PI*2);
+            ctx.fillStyle = '#00f0ff'; ctx.fill();
+          }
+        }
+      }
+    }
+
+    if (!results.multiHandLandmarks || results.multiHandLandmarks.length===0) {
+      if (currentGesture!=='IDLE') setFormation('IDLE');
+      setStatus('✦ IDLE FORMATION — NO HANDS DETECTED');
+      highlightGesture(null);
+      return;
+    }
+
+    var allHands = results.multiHandLandmarks;
+    var numHands = allHands.length;
+    var g1 = classifyHand(allHands[0]);
+    var newGesture;
+
+    if (numHands===1) {
+      if (g1==='POINT') {
+        gestureInfo.pointDir = { x:-(allHands[0][8].x-0.5)*2.2, y:-(allHands[0][8].y-0.5)*2.2, z:-1 };
+        newGesture = 'POINT';
+      } else if (g1==='TWO_FINGER') { newGesture = 'TWO_FINGER'; }
+        else if (g1==='THUMB_UP')   { newGesture = 'THUMB_UP'; }
+        else if (g1==='OPEN')       { newGesture = 'FAN'; }
+        else if (g1==='FIST')       { newGesture = 'GATHER'; }
+        else                          { newGesture = 'BEAM'; }
+    } else {
+      var g2   = classifyHand(allHands[1]);
+      var dist = Math.hypot(allHands[0][0].x-allHands[1][0].x, allHands[0][0].y-allHands[1][0].y);
+      if      (g1==='OPEN'&&g2==='OPEN') { newGesture = dist>0.35 ? 'DISPERSE' : 'VORTEX'; }
+      else if (g1==='FIST'&&g2==='FIST') { newGesture = 'GATHER'; }
+      else if (dist<0.13)                { newGesture = 'MERGE'; }
+      else                               { newGesture = g1==='OPEN' ? 'FAN' : 'BEAM'; }
+    }
+
+    if (newGesture!==currentGesture) setFormation(newGesture);
+
+    var names = {
+      IDLE:'✦ IDLE FORMATION — NO HANDS DETECTED', DISPERSE:'Disperse — scatter sphere',
+      GATHER:'Gather / regroup', BEAM:'Beam pointing - toward finger direction',
+      VORTEX:'Vortex — spiral helix', FAN:'Fan arc — 180° spread',
+      MERGE:'Merge — single giant column', POINT:'Beam toward finger direction',
+      TWO_FINGER:'90° arc rotation sweep', THUMB_UP:'Bonus node flies front & center, all others scatter',
+    };
+    setStatus(names[newGesture] || ('✦ ' + newGesture));
+    highlightGesture(newGesture);
+  }
+
+  var GESTURE_ROW_MAP = {
+    FAN:'gr-open', DISPERSE:'gr-two', VORTEX:'gr-vortex',
+    GATHER:'gr-fist', POINT:'gr-point', TWO_FINGER:'gr-v',
+    THUMB_UP:'gr-thumb', MERGE:'gr-merge', BEAM:'gr-point',
+  };
+  var _lastHighlight = null;
+  function highlightGesture(gesture) {
+    if (_lastHighlight) {
+      var prev = document.getElementById(_lastHighlight);
+      if (prev) { prev.style.color = ''; prev.style.textShadow = ''; }
+    }
+    var rowId = gesture ? GESTURE_ROW_MAP[gesture] : null;
+    _lastHighlight = rowId || null;
+    if (rowId) {
+      var el = document.getElementById(rowId);
+      if (el) { el.style.color = '#ffffff'; el.style.textShadow = '0 0 10px #00f0ff'; }
+    }
+  }
+
+  // Toggle gesture reference panel with 'h' key
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'h' || e.key === 'H') {
+      var panel = document.getElementById('gesture-ref');
+      if (panel) panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    }
+  });
+
+  function classifyHand(lm) {
+    var fingers = [{tip:8,pip:6},{tip:12,pip:10},{tip:16,pip:14},{tip:20,pip:18}];
+    var ext = 0;
+    for (var i = 0; i < fingers.length; i++) if (lm[fingers[i].tip].y < lm[fingers[i].pip].y) ext++;
+    if (ext>=4) return 'OPEN';
+    if (ext===0) {
+      // Thumb-up: thumb tip clearly above thumb base, all other fingers curled
+      var thumbUp = lm[4].y < lm[2].y - 0.06;
+      if (thumbUp) return 'THUMB_UP';
+      return 'FIST';
+    }
+    if (ext===1 && lm[8].y<lm[6].y && lm[12].y>=lm[10].y) return 'POINT';
+    // Two-finger (V/peace): index + middle extended, ring + pinky curled
+    if (ext===2 && lm[8].y<lm[6].y && lm[12].y<lm[10].y && lm[16].y>=lm[14].y && lm[20].y>=lm[18].y) return 'TWO_FINGER';
+    return 'PARTIAL';
+  }
+
+})();
+</script>
+</body>
+</html>

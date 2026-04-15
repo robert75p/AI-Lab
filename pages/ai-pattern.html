@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Pattern Detection — AI Labs</title>
+<script src="/vendor/tailwind.js"></script>
+<link rel="stylesheet" href="/vendor/fonts.css">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background-color: #0A1F44;
+  font-family: 'Inter', sans-serif;
+  color: #F1F5F9;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+body::after {
+  content: ''; position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none; z-index: 0; opacity: 0.5;
+}
+.ambient {
+  position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background:
+    radial-gradient(ellipse 60% 50% at 75% 15%, rgba(37,99,235,0.11) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at 10% 80%, rgba(20,184,166,0.08) 0%, transparent 55%);
+}
+.page-wrap { position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 0 32px; }
+
+.nav {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 24px 0; border-bottom: 1px solid rgba(37,99,235,0.12);
+}
+.back-link {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: 'JetBrains Mono', monospace; font-size: 11px;
+  letter-spacing: 0.08em; color: #38BDF8; text-decoration: none;
+  transition: gap 0.2s ease;
+}
+.back-link:hover { gap: 12px; }
+.nav-badge {
+  display: flex; align-items: center; gap: 6px; padding: 4px 10px;
+  border-radius: 999px; background: rgba(37,99,235,0.1); border: 1px solid rgba(37,99,235,0.2);
+  font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #38BDF8; letter-spacing: 0.06em;
+}
+.nav-dot { width: 6px; height: 6px; border-radius: 50%; background: #2563EB; animation: pulse-dot 2s ease-in-out infinite; }
+
+.page-hero { padding: 48px 0 40px; }
+.page-tag { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.12em; color: #334155; margin-bottom: 16px; }
+.page-heading {
+  font-family: 'Poppins', sans-serif; font-weight: 800;
+  font-size: clamp(32px, 4vw, 52px); letter-spacing: -0.03em; line-height: 1.05;
+  background: linear-gradient(130deg, #F1F5F9 0%, #2563EB 60%, #38BDF8 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text; margin-bottom: 16px;
+}
+.page-desc { font-size: 16px; line-height: 1.75; color: #334155; max-width: 560px; }
+
+.card {
+  background: linear-gradient(140deg, rgba(30,41,59,0.9), rgba(10,31,68,0.95));
+  border: 1px solid rgba(37,99,235,0.15); border-radius: 12px; padding: 24px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.04);
+}
+
+.section-label {
+  font-family: 'JetBrains Mono', monospace; font-size: 10px;
+  letter-spacing: 0.1em; color: #38BDF8; margin-bottom: 16px;
+}
+
+/* Chart canvas */
+.chart-wrap {
+  width: 100%; height: 220px; position: relative; margin-bottom: 8px;
+}
+
+/* Signal cards */
+.signals-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 16px 0 32px; }
+.signal-card {
+  background: linear-gradient(140deg, rgba(30,41,59,0.9), rgba(10,31,68,0.95));
+  border: 1px solid rgba(37,99,235,0.15); border-radius: 10px; padding: 18px;
+}
+.signal-title { font-size: 13px; font-weight: 600; color: #F1F5F9; margin-bottom: 6px; }
+.signal-val { font-family: 'Poppins', sans-serif; font-size: 26px; font-weight: 700; letter-spacing: -0.03em; }
+.signal-desc { font-size: 11px; color: #334155; line-height: 1.6; margin-top: 6px; }
+.signal-bar { height: 3px; border-radius: 2px; margin-top: 12px; }
+.signal-change { font-size: 11px; margin-top: 6px; }
+
+/* Correlation matrix */
+.matrix-row { display: flex; gap: 4px; margin-bottom: 4px; }
+.matrix-cell {
+  width: 44px; height: 44px; border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'JetBrains Mono', monospace; font-size: 9px;
+}
+.matrix-label { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: #334155; }
+
+/* Pattern list */
+.pattern-item {
+  display: flex; gap: 12px; padding: 12px;
+  border-radius: 8px; background: rgba(10,31,68,0.6);
+  border: 1px solid rgba(37,99,235,0.1); margin-bottom: 8px;
+}
+.pattern-strength {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  width: 44px; flex-shrink: 0;
+}
+.pattern-pct { font-family: 'Poppins', sans-serif; font-size: 16px; font-weight: 700; letter-spacing: -0.03em; }
+.pattern-lbl { font-family: 'JetBrains Mono', monospace; font-size: 7px; color: #334155; text-align: center; }
+.pattern-body { flex: 1; }
+.pattern-title { font-size: 13px; font-weight: 500; color: #F1F5F9; margin-bottom: 3px; }
+.pattern-meta { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: #334155; }
+
+@keyframes pulse-dot { 0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.3)} }
+@keyframes fade-up { from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)} }
+.fade-up { animation: fade-up 0.6s cubic-bezier(0.16,1,0.3,1) both; }
+.d1{animation-delay:.1s}.d2{animation-delay:.2s}.d3{animation-delay:.3s}
+</style>
+</head>
+<body>
+<div class="ambient"></div>
+<div class="page-wrap">
+
+  <nav class="nav">
+    <a href="../index.html" class="back-link">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+      BACK TO LABS
+    </a>
+    <div class="nav-badge"><div class="nav-dot"></div>PATTERN DETECTION MODULE</div>
+  </nav>
+
+  <div class="page-hero fade-up">
+    <div class="page-tag">MODULE 04 / AI PATTERN DETECTION</div>
+    <h1 class="page-heading">Surface Hidden Correlations<br>&amp; Predictive Signals</h1>
+    <p class="page-desc">Identify any possible correlation and linkage across datasets. AI-powered pattern recognition surfaces hidden signals and predictive relationships in your data.</p>
+  </div>
+
+  <!-- Signal Summary Cards -->
+  <div class="signals-grid fade-up d1">
+    <div class="signal-card">
+      <div class="signal-title">Strongest Correlation</div>
+      <div class="signal-val" style="color:#38BDF8;">0.94</div>
+      <div class="signal-desc">EURUSD vol ↔ News sentiment — detected across 142 data points</div>
+      <div class="signal-bar" style="background:linear-gradient(90deg,#2563EB,#38BDF8);width:94%;"></div>
+      <div class="signal-change" style="color:#14B8A6;">↑ Strengthened +0.06 this week</div>
+    </div>
+    <div class="signal-card">
+      <div class="signal-title">Patterns Detected</div>
+      <div class="signal-val" style="color:#14B8A6;">47</div>
+      <div class="signal-desc">Significant correlations found across 8 datasets in current session</div>
+      <div class="signal-bar" style="background:linear-gradient(90deg,#14B8A6,#38BDF8);width:78%;"></div>
+      <div class="signal-change" style="color:#38BDF8;">↑ +12 vs last scan</div>
+    </div>
+    <div class="signal-card">
+      <div class="signal-title">Anomaly Score</div>
+      <div class="signal-val" style="color:#2563EB;">2.3σ</div>
+      <div class="signal-desc">Standard deviations from expected baseline — moderate alert level</div>
+      <div class="signal-bar" style="background:linear-gradient(90deg,#2563EB,#38BDF8);width:45%;"></div>
+      <div class="signal-change" style="color:#334155;">Threshold: 3.0σ</div>
+    </div>
+  </div>
+
+  <!-- Chart + Patterns -->
+  <div style="display:grid;grid-template-columns:1fr 360px;gap:16px;margin-bottom:16px;" class="fade-up d2">
+
+    <!-- Waveform Chart -->
+    <div class="card">
+      <div class="section-label">SIGNAL ANALYSIS — EURUSD / NEWS SENTIMENT</div>
+      <div class="chart-wrap">
+        <canvas id="chart-canvas" style="width:100%;height:220px;display:block;"></canvas>
+      </div>
+      <div style="display:flex;gap:20px;font-family:'JetBrains Mono',monospace;font-size:9px;color:#334155;letter-spacing:0.04em;">
+        <span><span style="color:#38BDF8;">■</span> EURUSD Vol</span>
+        <span><span style="color:#14B8A6;">■</span> Sentiment</span>
+        <span><span style="color:#2563EB;">■</span> Correlation</span>
+      </div>
+    </div>
+
+    <!-- Pattern list -->
+    <div class="card">
+      <div class="section-label">TOP PATTERNS</div>
+      <div class="pattern-item">
+        <div class="pattern-strength"><div class="pattern-pct" style="color:#38BDF8;">94%</div><div class="pattern-lbl">STRENGTH</div></div>
+        <div class="pattern-body">
+          <div class="pattern-title">Vol ↔ Sentiment linkage</div>
+          <div class="pattern-meta">EURUSD · 142 SAMPLES · PEARSON 0.94</div>
+        </div>
+      </div>
+      <div class="pattern-item">
+        <div class="pattern-strength"><div class="pattern-pct" style="color:#14B8A6;">87%</div><div class="pattern-lbl">STRENGTH</div></div>
+        <div class="pattern-body">
+          <div class="pattern-title">Sprint velocity → delivery lag</div>
+          <div class="pattern-meta">JIRA · 18 SPRINTS · SPEARMAN 0.87</div>
+        </div>
+      </div>
+      <div class="pattern-item">
+        <div class="pattern-strength"><div class="pattern-pct" style="color:#2563EB;">81%</div><div class="pattern-lbl">STRENGTH</div></div>
+        <div class="pattern-body">
+          <div class="pattern-title">Order size ↔ market impact</div>
+          <div class="pattern-meta">FIX DATA · 8,420 ORDERS</div>
+        </div>
+      </div>
+      <div class="pattern-item">
+        <div class="pattern-strength"><div class="pattern-pct" style="color:#38BDF8;">76%</div><div class="pattern-lbl">STRENGTH</div></div>
+        <div class="pattern-body">
+          <div class="pattern-title">Bug rate → deployment frequency</div>
+          <div class="pattern-meta">GITHUB · 6 MONTHS DATA</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Correlation Matrix -->
+  <div class="card fade-up d3" style="margin-bottom:40px;">
+    <div class="section-label">CORRELATION MATRIX</div>
+    <div id="matrix-wrap" style="overflow-x:auto;">
+      <!-- Generated by JS -->
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── Chart canvas ──
+(function(){
+  const canvas = document.getElementById('chart-canvas');
+  if (!canvas) return;
+  const W = canvas.parentElement.clientWidth || 600;
+  const H = 220;
+  const DPR = window.devicePixelRatio || 1;
+  canvas.width = W * DPR; canvas.height = H * DPR;
+  canvas.style.width = W+'px'; canvas.style.height = H+'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(DPR, DPR);
+
+  const pts = 80;
+  let t = 0;
+
+  function wave(i, freq, amp, phase) {
+    return Math.sin(i/pts * Math.PI * freq + phase) * amp
+         + Math.sin(i/pts * Math.PI * freq * 1.7 + phase*0.5) * amp * 0.4;
+  }
+
+  function draw() {
+    ctx.clearRect(0,0,W,H);
+    t += 0.015;
+
+    // Grid lines
+    ctx.strokeStyle = 'rgba(37,99,235,0.06)';
+    ctx.lineWidth = 1;
+    for (let y = 0; y <= 4; y++) {
+      ctx.beginPath();
+      ctx.moveTo(0, H/4*y + 10);
+      ctx.lineTo(W, H/4*y + 10);
+      ctx.stroke();
+    }
+
+    // Helper to draw line
+    function drawLine(color, fn) {
+      ctx.beginPath();
+      for (let i = 0; i < pts; i++) {
+        const x = (i / pts) * W;
+        const y = H/2 + fn(i);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+
+    drawLine('rgba(56,189,248,0.8)',  i => wave(i, 2.5, 60, t));
+    drawLine('rgba(20,184,166,0.7)',  i => wave(i, 3.1, 45, t*0.8 + 1));
+    drawLine('rgba(37,99,235,0.6)',   i => wave(i, 1.8, 30, t*1.2 + 2));
+
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+// ── Correlation Matrix ──
+(function(){
+  const wrap = document.getElementById('matrix-wrap');
+  if (!wrap) return;
+  const labels = ['EURUSD', 'Sentiment', 'Sprint Vel', 'Bug Rate', 'Order Size'];
+  const values = [
+    [1.00, 0.94, 0.22, 0.15, 0.67],
+    [0.94, 1.00, 0.18, 0.12, 0.58],
+    [0.22, 0.18, 1.00, 0.76, 0.31],
+    [0.15, 0.12, 0.76, 1.00, 0.24],
+    [0.67, 0.58, 0.31, 0.24, 1.00],
+  ];
+
+  function valToColor(v) {
+    if (v >= 0.8) return 'rgba(37,99,235,0.55)';
+    if (v >= 0.6) return 'rgba(37,99,235,0.35)';
+    if (v >= 0.4) return 'rgba(37,99,235,0.18)';
+    if (v >= 0.2) return 'rgba(37,99,235,0.08)';
+    return 'rgba(10,31,68,0.4)';
+  }
+  function textColor(v) {
+    if (v >= 0.6) return '#F1F5F9';
+    if (v >= 0.3) return '#38BDF8';
+    return '#334155';
+  }
+
+  let html = '<div style="display:flex;gap:4px;margin-bottom:4px;padding-left:80px;">';
+  for (const l of labels) html += `<div class="matrix-cell matrix-label" style="font-size:8px;color:#334155;width:44px;text-align:center;">${l.substring(0,6)}</div>`;
+  html += '</div>';
+
+  for (let r = 0; r < values.length; r++) {
+    html += '<div class="matrix-row">';
+    html += `<div class="matrix-label" style="width:76px;display:flex;align-items:center;font-size:8px;">${labels[r]}</div>`;
+    for (let c = 0; c < values[r].length; c++) {
+      const v = values[r][c];
+      html += `<div class="matrix-cell" style="background:${valToColor(v)};color:${textColor(v)};border:1px solid rgba(37,99,235,0.1);">${v.toFixed(2)}</div>`;
+    }
+    html += '</div>';
+  }
+  wrap.innerHTML = html;
+})();
+</script>
+</body>
+</html>
