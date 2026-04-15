@@ -961,19 +961,21 @@ document.getElementById('json-input').addEventListener('input', ()=>{
 
     // Try WebGL, fall back to CPU if unavailable
     var backendReady;
+    var usingCPU = false;
     try {
       var canvas = document.createElement('canvas');
       var gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
       if (!gl) throw new Error('no webgl');
       backendReady = tf.setBackend('webgl').then(function() { return tf.ready(); })
-        .catch(function() { return tf.setBackend('cpu').then(function() { return tf.ready(); }); });
+        .catch(function() { usingCPU = true; return tf.setBackend('cpu').then(function() { return tf.ready(); }); });
     } catch(e) {
+      usingCPU = true;
       backendReady = tf.setBackend('cpu').then(function() { return tf.ready(); });
     }
     backendReady.then(function() {
       return window.handPoseDetection.createDetector(
         window.handPoseDetection.SupportedModels.MediaPipeHands,
-        { runtime: 'tfjs', modelType: 'full', maxHands: 2 }
+        { runtime: 'tfjs', modelType: 'lite', maxHands: 2 }
       );
     }).then(function(detector) {
       navigator.mediaDevices.getUserMedia({ video:{ width:320, height:240, facingMode:'user' } })
@@ -981,7 +983,7 @@ document.getElementById('json-input').addEventListener('input', ()=>{
           videoEl.srcObject = stream; videoEl.play();
           overlayEl.width = 160; overlayEl.height = 120;
           var lastSend = 0;
-          var INTERVAL = 67; // 15fps
+          var INTERVAL = usingCPU ? 200 : 67; // 5fps on CPU, 15fps on GPU
           function tick(ts) {
             requestAnimationFrame(tick);
             if (videoEl.readyState < 2 || videoEl.videoWidth === 0 || ts - lastSend < INTERVAL) return;
