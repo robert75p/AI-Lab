@@ -959,8 +959,10 @@ document.getElementById('json-input').addEventListener('input', ()=>{
     snapCanvas.width = 160; snapCanvas.height = 120;
     var snapCtx = snapCanvas.getContext('2d');
 
-    // Explicitly set WebGL backend and wait for it before creating detector
-    tf.setBackend('webgl').then(function() { return tf.ready(); }).then(function() {
+    // Try WebGL first, fall back to CPU if hardware acceleration is unavailable
+    var backendReady = tf.setBackend('webgl').then(function() { return tf.ready(); })
+      .catch(function() { return tf.setBackend('cpu').then(function() { return tf.ready(); }); });
+    backendReady.then(function() {
       return window.handPoseDetection.createDetector(
         window.handPoseDetection.SupportedModels.MediaPipeHands,
         { runtime: 'tfjs', modelType: 'full', maxHands: 2 }
