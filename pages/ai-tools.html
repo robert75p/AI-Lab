@@ -47,7 +47,7 @@ body::after {
 .nav-dot { width: 6px; height: 6px; border-radius: 50%; background: #14B8A6; animation: pulse-dot 2s ease-in-out infinite; }
 
 .page-hero { padding: 48px 0 40px; }
-.page-tag { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.12em; color: #334155; margin-bottom: 16px; }
+.page-tag { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.12em; color: hsl(196, 58%, 68%); margin-bottom: 16px; }
 .page-heading {
   font-family: 'Poppins', sans-serif; font-weight: 800;
   font-size: clamp(32px, 4vw, 52px); letter-spacing: -0.03em; line-height: 1.05;
@@ -55,7 +55,7 @@ body::after {
   -webkit-background-clip: text; -webkit-text-fill-color: transparent;
   background-clip: text; margin-bottom: 16px;
 }
-.page-desc { font-size: 16px; line-height: 1.75; color: #334155; max-width: 560px; }
+.page-desc { font-size: 16px; line-height: 1.75; color: #9cabc2; max-width: 560px; }
 
 /* Tool Tabs */
 .tool-tabs { display: flex; gap: 8px; margin: 32px 0 0; }
@@ -66,7 +66,7 @@ body::after {
   transition: all 0.2s ease;
   background: rgba(30,41,59,0.7);
   border-color: rgba(37,99,235,0.12);
-  color: #334155;
+  color: #84bbac;
 }
 .tool-tab.active {
   background: rgba(37,99,235,0.12);
@@ -228,7 +228,7 @@ body::after {
   <div class="page-hero fade-up">
     <div class="page-tag">MODULE 05 / AI TOOLS</div>
     <h1 class="page-heading">Essential Utilities<br>for AI Workflows</h1>
-    <p class="page-desc">JSON Builder, custom diagram builder, and FIX tag lookup in ATHENA â precision tools built for data-intensive, AI-powered environments.</p>
+    <p class="page-desc">JSON Builder, custom diagram builder, and FIX tag lookup in ATHENA with precision tools built for data-intensive, AI-powered environments.</p>
   </div>
 
   <!-- Tabs -->
@@ -236,6 +236,7 @@ body::after {
     <div class="tool-tab active" onclick="switchTab('json', this)">JSON BUILDER</div>
     <div class="tool-tab" onclick="switchTab('diagram', this)">DIAGRAM BUILDER</div>
     <div class="tool-tab" onclick="switchTab('fix', this)">FIX TAG LOOKUP</div>
+    <div class="tool-tab" onclick="switchTab('fixanalyzer', this)">FIX ANALYZER</div>
     <div class="tool-tab" onclick="switchTab('interactive', this)">INTERACTIVE DATA</div>
   </div>
 
@@ -326,6 +327,449 @@ body::after {
       </div>
     </div>
   </div>
+
+  <!-- FIX Analyzer Panel -->
+  <div id="panel-fixanalyzer" class="tool-panel">
+  <style>
+  .fa-wrap { background:#060e1c; border-radius:12px; border:1px solid rgba(20,184,166,0.15); overflow:hidden; }
+  .fa-toolbar {
+    display:flex; align-items:center; gap:12px; padding:14px 20px;
+    background:#080f20; border-bottom:1px solid rgba(255, 255, 255, 0.06);
+    flex-wrap:wrap;
+  }
+  .fa-toolbar-label { font-family:'JetBrains Mono',monospace; font-size:10px; color:#14B8A6; letter-spacing:.1em; }
+  .fa-file-btn {
+    position:relative; overflow:hidden; padding:7px 16px; border-radius:6px;
+    background:rgba(20,184,166,0.12); border:1px solid rgba(20,184,166,0.35);
+    font-family:'JetBrains Mono',monospace; font-size:10px; color:#14B8A6;
+    cursor:pointer; transition:background 0.2s,border-color 0.2s;
+  }
+  .fa-file-btn:hover { background:rgba(20,184,166,0.22); border-color:rgba(20,184,166,0.6); }
+  .fa-file-btn input[type=file] { position:absolute; inset:0; opacity:0; cursor:pointer; font-size:0; }
+  .fa-run-btn {
+    padding:7px 20px; border-radius:6px;
+    background:rgba(20,184,166,0.2); border:1px solid rgba(20,184,166,0.5);
+    font-family:'JetBrains Mono',monospace; font-size:10px; color:#14B8A6;
+    cursor:pointer; transition:background 0.2s,border-color 0.2s;
+  }
+  .fa-run-btn:hover { background:rgba(20,184,166,0.35); border-color:#14B8A6; color:#fff; }
+  .fa-run-btn:disabled { opacity:.35; cursor:not-allowed; }
+  .fa-xcheck-btn {
+    padding:7px 16px; border-radius:6px;
+    background:rgba(251,191,36,0.1); border:1px solid rgba(251,191,36,0.35);
+    font-family:'JetBrains Mono',monospace; font-size:10px; color:#fbbf24;
+    cursor:pointer; transition:background 0.2s,border-color 0.2s;
+  }
+  .fa-xcheck-btn:hover { background:rgba(251,191,36,0.25); border-color:#fbbf24; }
+  .fa-xcheck-btn.active { background:rgba(251,191,36,0.2); border-color:#fbbf24; color:#fef3c7; }
+  .fa-xcheck-btn:disabled { opacity:.35; cursor:not-allowed; }
+  .fa-exclude-wrap {
+    display:flex; align-items:center; gap:7px;
+  }
+  .fa-exclude-label {
+    font-family:'JetBrains Mono',monospace; font-size:10px; color:#94a3b8; letter-spacing:.08em; white-space:nowrap;
+  }
+  .fa-exclude-input {
+    background:#0b1929; border:1px solid rgba(148,163,184,0.25); border-radius:5px;
+    color:#cbd5e1; font-family:'JetBrains Mono',monospace; font-size:10px;
+    padding:5px 10px; width:160px; outline:none;
+    transition:border-color 0.2s;
+  }
+  .fa-exclude-input:focus { border-color:rgba(20,184,166,0.55); }
+  .fa-exclude-input::placeholder { color:#3d5166; }
+  .fa-save-btn {
+    display:flex; align-items:center; justify-content:center;
+    width:28px; height:28px; border-radius:5px; cursor:pointer;
+    background:rgba(20,184,166,0.08); border:1px solid rgba(20,184,166,0.25);
+    color:#5eead4; transition:background 0.2s, border-color 0.2s, color 0.2s;
+    flex-shrink:0;
+  }
+  .fa-save-btn:hover { background:rgba(20,184,166,0.22); border-color:rgba(20,184,166,0.6); color:#fff; }
+  .fa-save-btn.saved { border-color:#14B8A6; color:#14B8A6; }
+  .fa-cell.xc-hl { outline:1px solid var(--xc-bd); outline-offset:-1px; background:var(--xc-bg) !important; }
+  .fa-max-btn {
+    width:32px; height:32px; border-radius:6px; flex-shrink:0;
+    background:rgba(20,184,166,0.1); border:1px solid rgba(20,184,166,0.3);
+    color:#14B8A6; cursor:pointer; display:flex; align-items:center; justify-content:center;
+    transition:background 0.2s,border-color 0.2s;
+  }
+  .fa-max-btn:hover { background:rgba(20,184,166,0.25); border-color:#14B8A6; }
+  .fa-wrap:fullscreen { border-radius:0; }
+  .fa-wrap:fullscreen .fa-grid-wrap { height:calc(100vh - 130px); overflow-y:auto; }
+  .fa-status { font-family:'JetBrains Mono',monospace; font-size:10px; color:#94a3b8; margin-left:auto; }
+  .fa-legend { display:flex; gap:6px; flex-wrap:wrap; padding:10px 20px; border-bottom:1px solid rgba(255,255,255,0.04); align-items:center; }
+  .fa-legend-item {
+    display:flex; align-items:center; gap:5px;
+    font-family:'JetBrains Mono',monospace; font-size:9px;
+    color:#94a3b8; cursor:pointer; user-select:none;
+    padding:3px 8px 3px 5px; border-radius:4px;
+    border:1px solid transparent;
+    transition:background 0.15s, border-color 0.15s, color 0.15s;
+  }
+  .fa-legend-item:hover { background:rgba(255,255,255,0.04); }
+  .fa-legend-item.active { color:#e2e8f0; border-color:var(--leg-color); background:rgba(0,0,0,0.25); }
+  .fa-legend-item.inactive { opacity:0.35; }
+  .fa-legend-dot {
+    width:9px; height:9px; border-radius:2px; flex-shrink:0;
+    outline:2px solid transparent; outline-offset:1px;
+    transition:outline-color 0.15s;
+  }
+  .fa-legend-item.active .fa-legend-dot { outline-color:var(--leg-color); }
+  .fa-legend-sep { width:1px; height:16px; background:rgba(255,255,255,0.08); margin:0 4px; flex-shrink:0; }
+  .fa-legend-cats { display:flex; align-items:center; gap:6px; flex-wrap:wrap; flex:1; }
+  .fa-diagram-panel {
+    height:560px; border-top:1px solid rgba(255,255,255,0.05); overflow:hidden;
+    display:flex; flex-direction:column;
+  }
+  .fa-diag-top { flex:0 0 280px; overflow:hidden; min-height:80px; }
+  .fa-diag-divider {
+    flex-shrink:0; height:8px; background:#080f20;
+    cursor:ns-resize; position:relative;
+    display:flex; align-items:center; justify-content:center;
+    border-top:1px solid rgba(20,184,166,0.25);
+    border-bottom:1px solid rgba(20,184,166,0.1);
+    user-select:none;
+  }
+  .fa-diag-divider::before {
+    content:''; display:block; width:32px; height:3px; border-radius:2px;
+    background:rgba(20,184,166,0.4);
+    box-shadow:0 -4px 0 rgba(20,184,166,0.15), 0 4px 0 rgba(20,184,166,0.15);
+  }
+  .fa-diag-divider:hover::before { background:rgba(20,184,166,0.75); }
+  .fa-diag-bottom {
+    flex:1; background:#080f20; min-height:60px;
+    overflow:auto; padding:0;
+  }
+  .fa-diag-table {
+    border-collapse:collapse; width:100%; font-family:'JetBrains Mono',monospace;
+  }
+  .fa-diag-table thead {
+    position:sticky; top:0; z-index:2; background:#080f20;
+  }
+  .fa-diag-table thead tr {
+    border-bottom:1px solid rgba(20,184,166,0.3);
+  }
+  .fa-diag-table th {
+    font-size:9px; font-weight:700; color:#475569; letter-spacing:.06em;
+    padding:8px 16px 7px; text-align:left; white-space:nowrap;
+    text-transform:uppercase; border-right:1px solid rgba(255,255,255,0.04);
+  }
+  .fa-diag-tagnum { color:#14B8A6; font-weight:400; }
+  .fa-diag-table tbody tr {
+    border-bottom:1px solid rgba(255,255,255,0.03);
+    transition:background 0.15s;
+    cursor:pointer;
+  }
+  .fa-diag-table tbody tr:hover { background:rgba(255,255,255,0.03); }
+  .fa-diag-table tbody tr.row-active { background:rgba(20,184,166,0.07); }
+  .fa-diag-table td {
+    font-size:9px; color:#94a3b8; padding:5px 16px;
+    white-space:nowrap; border-right:1px solid rgba(255,255,255,0.04);
+    transition:color 0.15s;
+  }
+  .fa-diag-table tr.row-active td { color:#ffffff; }
+  .fa-diagram-btn {
+    display:flex; align-items:center; gap:6px; flex-shrink:0;
+    padding:4px 12px; border-radius:5px; cursor:pointer;
+    background:rgba(249,115,22,0.1); border:1px solid rgba(249,115,22,0.35);
+    color:#fb923c; font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:.08em;
+    transition:background 0.2s, border-color 0.2s, color 0.2s;
+  }
+  .fa-diagram-btn:hover:not(:disabled) { background:rgba(249,115,22,0.25); border-color:#f97316; color:#fff; }
+  .fa-diagram-btn:disabled { opacity:.35; cursor:not-allowed; }
+  .fa-idmatch-wrap { position:relative; flex-shrink:0; }
+  .fa-idmatch-btn {
+    display:flex; align-items:center; gap:5px;
+    font-family:'JetBrains Mono',monospace; font-size:9px; color:#94a3b8;
+    background:none; border:1px solid transparent; border-radius:4px;
+    padding:3px 8px 3px 5px; cursor:pointer; user-select:none;
+    transition:background 0.15s, border-color 0.15s, color 0.15s;
+  }
+  .fa-idmatch-btn:hover { background:rgba(255,255,255,0.04); }
+  .fa-idmatch-btn.has-active { color:#fce7f3; border-color:#ec4899; background:rgba(236,72,153,0.12); }
+  .fa-idmatch-dot { width:9px; height:9px; border-radius:2px; flex-shrink:0; background:rgba(236,72,153,0.6); border:1px solid #ec4899; }
+  .fa-idmatch-arrow { font-size:8px; margin-left:2px; color:#64748b; }
+  .fa-idmatch-panel {
+    display:none; position:absolute; right:0; top:calc(100% + 6px); z-index:300;
+    background:#0b1929; border:1px solid rgba(236,72,153,0.3); border-radius:7px;
+    padding:8px 0; min-width:220px;
+    box-shadow:0 8px 32px rgba(0,0,0,0.5);
+    max-height:320px; overflow-y:auto;
+  }
+  .fa-idmatch-panel.open { display:block; }
+  .fa-idmatch-panel-hdr {
+    font-family:'JetBrains Mono',monospace; font-size:9px; color:#475569;
+    padding:2px 12px 6px; letter-spacing:.08em; border-bottom:1px solid rgba(255,255,255,0.05);
+    margin-bottom:4px; display:flex; justify-content:space-between; align-items:center;
+    position:sticky; top:0; background:#0b1929; z-index:1;
+  }
+  .fa-idmatch-all { color:#ec4899; cursor:pointer; font-size:9px; }
+  .fa-idmatch-all:hover { color:#f9a8d4; }
+  .fa-idmatch-search-wrap {
+    display:flex; align-items:center; gap:6px;
+    padding:5px 10px; border-bottom:1px solid rgba(255,255,255,0.05);
+    position:sticky; top:32px; background:#0b1929; z-index:1;
+    color:#475569;
+  }
+  .fa-idmatch-search {
+    flex:1; background:transparent; border:none; outline:none;
+    font-family:'JetBrains Mono',monospace; font-size:9px; color:#cbd5e1;
+  }
+  .fa-idmatch-search::placeholder { color:#334155; }
+  .fa-idmatch-save {
+    display:flex; align-items:center; justify-content:center;
+    width:20px; height:20px; border-radius:4px; cursor:pointer;
+    background:rgba(236,72,153,0.08); border:1px solid rgba(236,72,153,0.25);
+    color:#ec4899; transition:background 0.2s, border-color 0.2s, color 0.2s; flex-shrink:0;
+  }
+  .fa-idmatch-save:hover { background:rgba(236,72,153,0.22); border-color:#ec4899; color:#fff; }
+  .fa-idmatch-save.saved { border-color:#ec4899; color:#f9a8d4; }
+  .fa-idmatch-row {
+    display:flex; align-items:center; gap:8px;
+    padding:4px 12px; cursor:pointer;
+    font-family:'JetBrains Mono',monospace; font-size:9px; color:#94a3b8;
+    transition:background 0.1s;
+  }
+  .fa-idmatch-row:hover { background:rgba(255,255,255,0.04); }
+  .fa-idmatch-row.checked { color:#cbd5e1; }
+  .fa-idmatch-check {
+    width:12px; height:12px; border-radius:2px; flex-shrink:0;
+    border:1px solid rgba(148,163,184,0.3); background:transparent;
+    display:flex; align-items:center; justify-content:center;
+    transition:background 0.15s, border-color 0.15s;
+  }
+  .fa-idmatch-row.checked .fa-idmatch-check { background:rgba(236,72,153,0.2); border-color:#ec4899; }
+  .fa-idmatch-tick { display:none; color:#ec4899; font-size:9px; line-height:1; }
+  .fa-idmatch-row.checked .fa-idmatch-tick { display:block; }
+  .fa-grid-wrap { overflow-x:auto; }
+  #fa-copy-tip {
+    position:fixed; z-index:10000; pointer-events:none;
+    background:#14B8A6; color:#fff;
+    font-family:'JetBrains Mono',monospace; font-size:9px; font-weight:700;
+    padding:4px 10px; border-radius:4px;
+    opacity:0; transform:translateY(0px);
+    transition:opacity 0.15s, transform 0.3s;
+    white-space:nowrap;
+  }
+  #fa-copy-tip.show { opacity:1; transform:translateY(-6px); }
+  #fa-cell-tip {
+    position:fixed; z-index:9999; pointer-events:none;
+    background:#0b1929; border:1px solid rgba(20,184,166,0.35);
+    border-radius:6px; padding:6px 12px; display:none;
+    box-shadow:0 6px 24px rgba(0,0,0,0.5);
+    max-width:320px;
+  }
+  #fa-cell-tip .tip-tag {
+    font-family:'JetBrains Mono',monospace; font-size:10px;
+    color:#14B8A6; font-weight:700; margin-bottom:2px;
+  }
+  #fa-cell-tip .tip-name {
+    font-family:'JetBrains Mono',monospace; font-size:9px;
+    color:#94a3b8; margin-bottom:4px;
+  }
+  #fa-cell-tip .tip-val {
+    font-family:'JetBrains Mono',monospace; font-size:9px;
+    color:#e2e8f0; word-break:break-all;
+  }
+  .fa-grid { display:flex; min-width:max-content; }
+  .fa-tags-col {
+    width:220px; min-width:220px; flex-shrink:0;
+    background:#07101f; position:sticky; left:0; z-index:10;
+    border-right:1px solid rgba(255,255,255,0.07);
+    box-shadow:3px 0 12px rgba(0,0,0,0.4);
+  }
+  .fa-tags-col-header {
+    height:90px; display:flex; align-items:flex-end; padding:0 14px 10px;
+    border-bottom:1px solid rgba(255,255,255,0.07);
+    font-family:'JetBrains Mono',monospace; font-size:9px; color:#4d7a96; letter-spacing:.1em;
+  }
+  .fa-tag-row {
+    display:flex; align-items:center; gap:7px;
+    padding:0 14px; height:26px; border-bottom:1px solid rgba(255,255,255,0.045);
+  }
+  .fa-tag-row { cursor:pointer; }
+  .fa-tag-row:hover { background:rgba(255,255,255,0.025); }
+  .fa-row-eye {
+    margin-left:auto; flex-shrink:0; width:16px; height:16px;
+    display:flex; align-items:center; justify-content:center;
+    opacity:0; border-radius:3px; color:#334155;
+    transition:opacity 0.15s, color 0.15s;
+  }
+  .fa-tag-row:hover .fa-row-eye { opacity:1; }
+  .fa-tag-row.row-hidden .fa-row-eye { opacity:1; color:#ef4444; }
+  .fa-tag-row.row-hidden {
+    height:3px; min-height:3px; overflow:hidden; padding:0;
+    background:rgba(239,68,68,0.25); border-bottom:none; border-top:none;
+    cursor:pointer;
+  }
+  .fa-tag-row.row-hidden .fa-tag-num,
+  .fa-tag-row.row-hidden .fa-tag-name,
+  .fa-tag-row.row-hidden .fa-row-eye { display:none; }
+  .fa-cell.row-hidden {
+    height:3px; min-height:3px; overflow:hidden; padding:0;
+    background:rgba(239,68,68,0.08); border-bottom:none; border-top:none;
+  }
+  .fa-tag-row.row-hl { background:rgba(20,184,166,0.13) !important; border-top:1px solid rgba(20,184,166,0.3); border-bottom:1px solid rgba(20,184,166,0.3); }
+  .fa-tag-row.row-hl .fa-tag-num { color:#14B8A6; }
+  .fa-tag-row.row-hl .fa-tag-name { color:#5eead4; }
+  .fa-tag-row.row-hover { background:rgba(255,255,255,0.06) !important; }
+  .fa-tag-row.row-hover .fa-tag-num  { color:#fff; }
+  .fa-tag-row.row-hover .fa-tag-name { color:#fff; }
+  .fa-cell.row-hl { background:rgba(20,184,166,0.07) !important; border-top:1px solid rgba(20,184,166,0.25) !important; border-bottom:1px solid rgba(20,184,166,0.25) !important; }
+  .fa-tag-num { font-family:'JetBrains Mono',monospace; font-size:9px; color:#4d82a8; min-width:38px; text-align:right; flex-shrink:0; }
+  .fa-tag-name { font-family:'JetBrains Mono',monospace; font-size:9px; color:#7a9ab8; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .fa-tag-row.key-tag .fa-tag-num { color:#14B8A6; }
+  .fa-tag-row.key-tag .fa-tag-name { color:#5eead4; }
+  .fa-tag-row.tag-150-row .fa-tag-name { color:#fbbf24; }
+  .fa-msg-col { width:255px; min-width:255px; flex-shrink:0; border-right:1px solid rgba(255,255,255,0.04); transition:width 0.2s ease, min-width 0.2s ease; }
+  .fa-msg-col.collapsed { width:38px; min-width:38px; }
+  .fa-msg-col.collapsed .fa-col-body { display:none; }
+  .fa-msg-col.collapsed .fa-col-header { padding:8px 0; align-items:center; justify-content:flex-start; gap:6px; border-left-width:3px; }
+  .fa-msg-col.collapsed .fa-col-ts,
+  .fa-msg-col.collapsed .fa-col-sum { display:none; }
+  .fa-msg-col.collapsed .fa-col-badge { writing-mode:vertical-rl; transform:rotate(180deg); padding:6px 3px; font-size:8px; width:28px; justify-content:center; }
+  .fa-msg-col.collapsed .fa-cell { display:none; }
+  .fa-col-header {
+    height:90px; padding:10px 12px 8px;
+    border-bottom:1px solid rgba(255,255,255,0.07);
+    display:flex; flex-direction:column; justify-content:space-between;
+    position:relative;
+  }
+  .fa-col-collapse {
+    position:absolute; top:7px; right:7px;
+    width:18px; height:18px; border-radius:4px; border:1px solid rgba(255,255,255,0.12);
+    background:rgba(255,255,255,0.05); color:#4d82a8; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    transition:background 0.15s, border-color 0.15s, color 0.15s;
+    flex-shrink:0;
+  }
+  .fa-col-collapse:hover { background:rgba(20,184,166,0.18); border-color:rgba(20,184,166,0.5); color:#14B8A6; }
+  .fa-msg-col.collapsed .fa-col-collapse { position:static; margin:4px auto 0; transform:rotate(180deg); }
+  .fa-col-ts { font-family:'JetBrains Mono',monospace; font-size:8.5px; color:#7a9ab8; line-height:1.6; }
+  .fa-col-ts em { font-style:normal; color:#a0bdd0; }
+  .fa-col-badge {
+    display:inline-flex; align-items:center; gap:4px; padding:2px 8px;
+    border-radius:3px; font-family:'JetBrains Mono',monospace; font-size:9px;
+    font-weight:700; letter-spacing:.05em; width:fit-content;
+  }
+  .fa-col-sum { font-family:'JetBrains Mono',monospace; font-size:8px; color:#7a9ab8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .fa-cell {
+    height:26px; padding:0 12px; display:flex; align-items:center;
+    border-bottom:1px solid rgba(255,255,255,0.045);
+    font-family:'JetBrains Mono',monospace; font-size:9.5px; color:#3d6a8a;
+    overflow:hidden; white-space:nowrap; cursor:default;
+    transition:background 0.1s;
+  }
+  .fa-cell:hover { background:rgba(255,255,255,0.04) !important; }
+  .fa-cell.has-val { color:#b0c8dc; }
+  .fa-cell.tag-150 { font-weight:700; }
+  .fa-cell.id-match { border-left:2px solid transparent; padding-left:10px; }
+  .fa-placeholder {
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    height:260px; gap:10px; color:#3d6a8a;
+    font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:.12em;
+  }
+  /* Tooltip on tag rows */
+  .fa-tag-row { position:relative; }
+  .fa-tag-row[data-desc]:hover::after {
+    content: attr(data-desc);
+    position:absolute; left:222px; top:50%; transform:translateY(-50%);
+    z-index:200;
+    background:#0b1e35; border:1px solid rgba(20,184,166,0.45);
+    color:#b0c8dc; font-family:'JetBrains Mono',monospace; font-size:9px; line-height:1.5;
+    padding:5px 12px; border-radius:5px; white-space:nowrap; pointer-events:none;
+    box-shadow:0 6px 24px rgba(0,0,0,0.7);
+  }
+  </style>
+  <div class="fa-wrap">
+    <div class="fa-toolbar">
+      <span class="fa-toolbar-label">&#9658; FIX ANALYZER</span>
+      <label class="fa-file-btn" id="fa-file-label">
+        &#128194; SELECT FILE
+        <input type="file" id="fa-file-input" accept=".txt,.log,.fix,.csv">
+      </label>
+      <button class="fa-run-btn" id="fa-run-btn" disabled>&#9654; RUN</button>
+      <button class="fa-xcheck-btn" id="fa-xcheck-btn" disabled>&#10799; X-CHECK</button>
+      <div class="fa-exclude-wrap">
+        <span class="fa-exclude-label">EXCLUDE</span>
+        <input type="text" class="fa-exclude-input" id="fa-exclude-input" placeholder="e.g. 35,49,56" title="Comma-separated FIX tags to hide">
+        <button class="fa-save-btn" id="fa-exclude-save" title="Save excluded tags">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        </button>
+      </div>
+      <span class="fa-status" id="fa-status">No file loaded</span>
+      <button class="fa-max-btn" id="fa-max-btn" onclick="faToggleFullscreen()" title="Maximize">
+        <svg id="fa-max-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3"/></svg>
+      </button>
+    </div>
+    <div class="fa-legend" id="fa-legend" style="display:none">
+      <div class="fa-legend-cats" id="fa-legend-cats">
+        <!-- exec-type checkboxes populated by buildLegend() -->
+      </div>
+      <button class="fa-diagram-btn" id="fa-diagram-btn" disabled>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="5" height="5"/><rect x="16" y="3" width="5" height="5"/><rect x="9" y="16" width="5" height="5"/><line x1="5.5" y1="8" x2="5.5" y2="11"/><line x1="18.5" y1="8" x2="18.5" y2="11"/><line x1="5.5" y1="11" x2="18.5" y2="11"/><line x1="11.5" y1="11" x2="11.5" y2="16"/></svg>
+        DIAGRAM
+      </button>
+      <div class="fa-idmatch-wrap" id="fa-idmatch-wrap">
+        <button class="fa-idmatch-btn" id="fa-idmatch-btn">
+          <span class="fa-idmatch-dot"></span>
+          ID match <span class="fa-idmatch-arrow">&#9660;</span>
+        </button>
+        <div class="fa-idmatch-panel" id="fa-idmatch-panel">
+          <div class="fa-idmatch-panel-hdr">
+            <span>SOURCE TAGS</span>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span class="fa-idmatch-all" id="fa-idmatch-all">all / none</span>
+              <button class="fa-idmatch-save" id="fa-idmatch-save" title="Save selections">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="fa-idmatch-search-wrap">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" class="fa-idmatch-search" id="fa-idmatch-search" placeholder="Search tag…">
+          </div>
+          <!-- rows populated by buildIdMatchPanel() -->
+        </div>
+      </div>
+    </div>
+    <div id="fa-copy-tip">&#10003; Copied</div>
+    <div id="fa-cell-tip">
+      <div class="tip-tag" id="fa-tip-tag"></div>
+      <div class="tip-name" id="fa-tip-name"></div>
+      <div class="tip-val" id="fa-tip-val"></div>
+    </div>
+    <div class="fa-grid-wrap" id="fa-grid-wrap">
+      <div class="fa-placeholder" id="fa-placeholder">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        SELECT A FIX MESSAGE FILE AND CLICK RUN
+      </div>
+      <div class="fa-grid" id="fa-grid" style="display:none"></div>
+    </div>
+    <div class="fa-diagram-panel" id="fa-diagram-panel" style="display:none">
+      <div class="fa-diag-top" id="fa-diag-top">
+        <svg id="fa-diagram-svg" style="width:100%;height:100%;display:block;cursor:grab"></svg>
+      </div>
+      <div class="fa-diag-divider" id="fa-diag-divider"></div>
+      <div class="fa-diag-bottom" id="fa-diag-bottom">
+        <table class="fa-diag-table" id="fa-diag-tags">
+          <thead>
+            <tr>
+              <th>APP_CODE <span class="fa-diag-tagnum">(7203)</span></th>
+              <th>DEST_ID <span class="fa-diag-tagnum">(10010)</span></th>
+              <th>ORDER_ID <span class="fa-diag-tagnum">(10914)</span></th>
+              <th>ORDER_VID <span class="fa-diag-tagnum">(10916)</span></th>
+              <th>PARENT_ORDER_ID <span class="fa-diag-tagnum">(10910)</span></th>
+              <th>PARENT_ORDER_VID <span class="fa-diag-tagnum">(10909)</span></th>
+            </tr>
+          </thead>
+          <tbody id="fa-diag-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  </div>
+
 
   <!-- ââ TOOL 4: Interactive Data â Cyber Xianxia ââ -->
   <div id="panel-interactive" class="tool-panel">
@@ -1225,6 +1669,1092 @@ document.getElementById('json-input').addEventListener('input', ()=>{
     return 'PARTIAL';
   }
 
+})();
+
+// ── FIX Analyzer ──────────────────────────────────────────────────────────────
+(function(){
+  // Standard FIX tag dictionary (FIX 4.2 + common extensions)
+  var STD = {
+    '1':'Account','6':'AvgPx','8':'BeginString','9':'BodyLength','10':'CheckSum',
+    '11':'ClOrdID','14':'CumQty','15':'Currency','17':'ExecID','18':'ExecInst',
+    '20':'ExecTransType','21':'HandlInst','22':'IDSource','29':'LastCapacity',
+    '30':'LastMkt','31':'LastPx','32':'LastQty','34':'MsgSeqNum','35':'MsgType',
+    '37':'OrderID','38':'OrderQty','39':'OrdStatus','40':'OrdType','44':'Price',
+    '47':'Rule80A','48':'SecurityID','49':'SenderCompID','52':'SendingTime',
+    '54':'Side','55':'Symbol','56':'TargetCompID','58':'Text','59':'TimeInForce',
+    '60':'TransactTime','68':'TotNoOrders','75':'TradeDate','76':'ExecBroker',
+    '100':'ExDestination','109':'ClientID','113':'ReportToExch','115':'OnBehalfOfCompID',
+    '116':'OnBehalfOfSubID','120':'SettlCurrency','143':'TargetLocationID',
+    '150':'ExecType','151':'LeavesQty','204':'CustomerOrFirm','341':'ExpirationTime',
+    '377':'SolicitedFlag','378':'ExecRestatementReason','411':'PegDifference',
+    '442':'MultiLegReporting','468':'NumberOfOrders','470':'CountryOfIssue',
+    '549':'CrossType','872':'InstrumentPartySubIDType'
+  };
+
+  // ExecType (tag 150) colour theme
+  var EXEC_THEME_ORDER = ['A','0','1','2','3','4','5','6','7','8','9','B','C','D','E'];
+
+  var EXEC_THEME = {
+    'A': { label:'Pending New',   color:'#38bdf8', bg:'rgba(56,189,248,0.07)'  },
+    '0': { label:'New',           color:'#60a5fa', bg:'rgba(96,165,250,0.07)'  },
+    '1': { label:'Partial Fill',  color:'#4ade80', bg:'rgba(74,222,128,0.07)'  },
+    '2': { label:'Fill',          color:'#22c55e', bg:'rgba(34,197,94,0.09)'   },
+    '3': { label:'Done for Day',  color:'#fb923c', bg:'rgba(251,146,60,0.07)'  },
+    '4': { label:'Canceled',      color:'#f87171', bg:'rgba(248,113,113,0.07)' },
+    '5': { label:'Replace',       color:'#a78bfa', bg:'rgba(167,139,250,0.07)' },
+    '6': { label:'Pending Cancel',color:'#fb923c', bg:'rgba(251,146,60,0.07)'  },
+    '7': { label:'Stopped',       color:'#94a3b8', bg:'rgba(148,163,184,0.06)' },
+    '8': { label:'Rejected',      color:'#ef4444', bg:'rgba(239,68,68,0.09)'   },
+    '9': { label:'Suspended',     color:'#94a3b8', bg:'rgba(148,163,184,0.06)' },
+    'B': { label:'Calculated',    color:'#94a3b8', bg:'rgba(148,163,184,0.06)' },
+    'C': { label:'Expired',       color:'#fb7185', bg:'rgba(251,113,133,0.07)' },
+    'D': { label:'Restated',      color:'#fbbf24', bg:'rgba(251,191,36,0.09)'  },
+    'E': { label:'Trade(clear)',  color:'#34d399', bg:'rgba(52,211,153,0.07)'  },
+    'F': { label:'Trade',         color:'#34d399', bg:'rgba(52,211,153,0.09)'  },
+    'G': { label:'Trade Correct', color:'#6ee7b7', bg:'rgba(110,231,183,0.07)' },
+    'H': { label:'Trade Cancel',  color:'#f87171', bg:'rgba(248,113,113,0.09)' },
+    'I': { label:'Order Status',  color:'#94a3b8', bg:'rgba(148,163,184,0.06)' }
+  };
+
+  // Highlight palette for shared ID values (distinct per unique value)
+  var ID_PALETTE = [
+    { bg:'rgba(251,191,36,0.15)',  bd:'#fbbf24' },
+    { bg:'rgba(56,189,248,0.15)',  bd:'#38bdf8' },
+    { bg:'rgba(167,139,250,0.15)', bd:'#a78bfa' },
+    { bg:'rgba(52,211,153,0.15)',  bd:'#34d399' },
+    { bg:'rgba(251,113,133,0.15)', bd:'#fb7185' },
+    { bg:'rgba(251,146,60,0.15)',  bd:'#fb923c' },
+    { bg:'rgba(99,102,241,0.15)',  bd:'#818cf8' },
+    { bg:'rgba(244,114,182,0.15)', bd:'#f472b6' }
+  ];
+
+  // Tags whose values should be highlighted when shared across messages
+  var HL_TAGS = {'1':1,'11':1,'17':1,'37':1,'109':1,'10600':1};
+
+  // Tags to display prominently in left column (ordered display groups)
+  var KEY_TAGS = {'37':1,'11':1,'17':1,'1':1,'109':1,'150':1,'39':1,'60':1,'52':1};
+
+  var rawText = null;
+  var parsedMsgs = [];
+
+  // Short descriptions for standard FIX tags (not in xlsx)
+  var STD_DESC = {
+    '1':'Identifier for the client account','6':'Calculated average price of all fills',
+    '8':'FIX version (e.g. FIX.4.2)','9':'Message body length in bytes',
+    '10':'Three-digit checksum','11':'Unique order identifier assigned by the client',
+    '14':'Total qty filled so far','15':'Currency of the order',
+    '17':'Unique identifier for each execution report','18':'Execution instruction flags',
+    '20':'Identifies transaction type: New, Cancel, Correct','21':'How order should be handled by broker',
+    '22':'Security identifier source','29':'Capacity of the last fill',
+    '30':'Market of execution for the last fill','31':'Price of the last fill',
+    '32':'Quantity of the last fill','34':'Message sequence number',
+    '35':'Defines message type (8=ExecutionReport)','37':'Unique order ID assigned by the broker/exchange',
+    '38':'Total order quantity','39':'Current status of the order',
+    '40':'Order type: Market, Limit, Stop…','44':'Order limit price',
+    '47':'Rule 80A designation','48':'Security identifier value',
+    '49':'Sender CompID (sender identity)','52':'Time message was generated (UTC)',
+    '54':'Side: 1=Buy, 2=Sell','55':'Ticker symbol of the instrument',
+    '56':'Target CompID (recipient identity)','58':'Free text / reason message',
+    '59':'Time-in-force: Day, GTC, IOC…','60':'Time of execution / order creation (UTC)',
+    '68':'Total number of orders','75':'Trade date','76':'Executing broker',
+    '100':'Execution destination (exchange/venue)','109':'Client identifier',
+    '113':'Whether to report to exchange','115':'On behalf of CompID',
+    '116':'On behalf of SubID','120':'Settlement currency',
+    '143':'Target location ID','150':'Type of execution: New, Fill, Cancel, Restated…',
+    '151':'Remaining open quantity','204':'Customer or firm indicator',
+    '341':'Order expiration time','377':'Whether order was solicited',
+    '378':'Reason for execution restatement','411':'Peg offset value',
+    '442':'Multi-leg reporting type','468':'Number of orders','470':'Country of issue',
+    '549':'Cross order type (BLOCK, etc.)'
+  };
+
+  // Load custom fields from xlsx export — authoritative source for field names & descriptions
+  var customFields = {};
+  var fieldsLoaded = fetch('/data/fix_fields.json')
+    .then(function(r){ return r.json(); })
+    .then(function(d){ customFields = d; })
+    .catch(function(){});
+
+  function tagName(t) {
+    // xlsx is the authoritative source; fall back to STD dictionary
+    if (customFields[t] && customFields[t].name) return customFields[t].name;
+    if (STD[t]) return STD[t];
+    return '';
+  }
+
+  function tagDesc(t) {
+    if (customFields[t] && customFields[t].desc) return customFields[t].desc;
+    if (STD_DESC[t]) return STD_DESC[t];
+    return '';
+  }
+
+  function parseFIXLine(line) {
+    var msg = {};
+    // Support both ';' and SOH (\x01) delimiters
+    var delim = line.indexOf('\x01') >= 0 ? '\x01' : ';';
+    var parts = line.trim().split(delim);
+    parts.forEach(function(p) {
+      var eq = p.indexOf('=');
+      if (eq < 1) return;
+      var tag = p.slice(0, eq).trim();
+      var val = p.slice(eq + 1).trim();
+      if (tag && val !== undefined) msg[tag] = val;
+    });
+    return msg;
+  }
+
+  function parseFile(text) {
+    var lines = text.split('\n').filter(function(l){ return l.trim().length > 5; });
+    return lines.map(parseFIXLine).filter(function(m){ return m['35'] === '8' || m['35']; });
+  }
+
+  function sortByTag60(msgs) {
+    return msgs.slice().sort(function(a, b) {
+      var ta = a['60'] || a['52'] || '';
+      var tb = b['60'] || b['52'] || '';
+      return ta < tb ? -1 : ta > tb ? 1 : 0;
+    });
+  }
+
+  // Values too generic to be meaningful IDs — shared with XC_SKIP
+  var ID_SKIP = { '0':1,'1':1,'2':1,'3':1,'4':1,'5':1,'6':1,'7':1,'8':1,'9':1,
+    'Y':1,'N':1,'000':1,'DAY':1,'GTC':1,'IOC':1,'BUY':1,'SELL':1,
+    'FIX.4.2':1,'FIX.4.4':1,'BLOCK':1,'GMT':1,'EUR':1,'USD':1,'GBP':1,'CHF':1 };
+
+  function buildIdColorMap(msgs, allTags) {
+    // allTags=true bypasses the selection filter (used for building the dropdown list)
+    var selectedTags = allTags ? null : Object.keys(ID_MATCH_TAGS).filter(function(t){ return ID_MATCH_TAGS[t] !== false; });
+    // Nothing selected → no highlights
+    if (!allTags && selectedTags.length === 0) return {};
+    var filterByTag = !allTags;
+    var selectedSet = {};
+    if (!allTags) selectedTags.forEach(function(t){ selectedSet[t] = true; });
+
+    // Count how many distinct messages each value appears in (within source tags)
+    var valueMsgSets = {}; // value → { msgIndex: true }
+    msgs.forEach(function(m, idx) {
+      Object.keys(m).forEach(function(t) {
+        if (filterByTag && !selectedSet[t]) return; // only source tags
+        var v = m[t];
+        if (!v || v.length < 3 || ID_SKIP[v]) return;
+        if (!valueMsgSets[v]) valueMsgSets[v] = {};
+        valueMsgSets[v][idx] = true;
+      });
+    });
+
+    // Assign a colour derived from the value itself so the same value
+    // always gets the same colour regardless of selection or load order
+    var colorMap = {}; // value → paletteIndex (flat — highlights propagate to ALL tags)
+    Object.keys(valueMsgSets).forEach(function(v) {
+      if (Object.keys(valueMsgSets[v]).length >= 2) {
+        var h = 0;
+        for (var i = 0; i < v.length; i++) h = (Math.imul(31, h) + v.charCodeAt(i)) | 0;
+        colorMap[v] = Math.abs(h) % ID_PALETTE.length;
+      }
+    });
+    return colorMap;
+  }
+
+  function getExcludedTags() {
+    var raw = (document.getElementById('fa-exclude-input') || {}).value || '';
+    var excluded = {};
+    raw.split(',').forEach(function(t) {
+      var n = t.trim();
+      if (n) excluded[n] = true;
+    });
+    return excluded;
+  }
+
+  function collectAllTags(msgs) {
+    var seen = {};
+    var excluded = getExcludedTags();
+    msgs.forEach(function(m){ Object.keys(m).forEach(function(t){ if (!excluded[t]) seen[t] = true; }); });
+    // Sort: numeric tags numerically, then by number
+    return Object.keys(seen).sort(function(a, b){ return parseInt(a,10) - parseInt(b,10); });
+  }
+
+  function shortenVal(v, max) {
+    max = max || 32;
+    if (!v) return '';
+    if (v.length > max) return v.slice(0, max - 1) + '\u2026';
+    return v;
+  }
+
+  // ── Legend checkboxes ────────────────────────────────────────────
+  var LEGEND_ACTIVE = {}; // execType key → true/false
+  var ID_MATCH_TAGS = {}; // tag → true (selected) / false (deselected)
+  var currentColorMap = {}; // module-level so panel can read it
+  var fullMatchTags = [];  // all tags with ≥1 match when using all sources (panel list)
+
+  function buildLegend(msgs) {
+    var cats = document.getElementById('fa-legend-cats');
+    cats.innerHTML = '';
+
+    // Find which ExecTypes are present in the full dataset (not filtered)
+    var present = {};
+    msgs.forEach(function(m){ if (m['150']) present[m['150']] = true; });
+
+    EXEC_THEME_ORDER.forEach(function(key) {
+      if (!present[key]) return;
+      var theme = EXEC_THEME[key];
+      if (!(key in LEGEND_ACTIVE)) LEGEND_ACTIVE[key] = true;
+
+      var item = document.createElement('span');
+      item.className = 'fa-legend-item leg-exec' + (LEGEND_ACTIVE[key] ? ' active' : ' inactive');
+      item.style.setProperty('--leg-color', theme.color);
+      item.setAttribute('data-key', key);
+      item.innerHTML = '<span class="fa-legend-dot" style="background:' + theme.color + '"></span>' +
+        theme.label + ' (' + key + ')';
+      item.addEventListener('click', function() {
+        LEGEND_ACTIVE[key] = !LEGEND_ACTIVE[key];
+        item.classList.toggle('active', LEGEND_ACTIVE[key]);
+        item.classList.toggle('inactive', !LEGEND_ACTIVE[key]);
+        render(parsedMsgs);
+      });
+      cats.appendChild(item);
+    });
+  }
+
+  function applyIdMatchHighlights() {
+    var grid = document.getElementById('fa-grid');
+    if (!grid) return;
+    grid.querySelectorAll('.fa-cell').forEach(function(cell) {
+      var t   = cell.getAttribute('data-tag');
+      var val = cell.getAttribute('data-val');
+      // Clear previous id-match styles
+      cell.classList.remove('id-match');
+      cell.style.removeProperty('background');
+      cell.style.removeProperty('border-left');
+      cell.style.removeProperty('padding-left');
+      // Re-apply if matched
+      if (val && currentColorMap[val] !== undefined) {
+        var pal = ID_PALETTE[currentColorMap[val]];
+        cell.style.background  = pal.bg;
+        cell.style.borderLeft  = '2px solid ' + pal.bd;
+        cell.style.paddingLeft = '10px';
+        cell.classList.add('id-match');
+      }
+    });
+  }
+
+  function buildIdMatchPanel() {
+    var panel = document.getElementById('fa-idmatch-panel');
+    var btn   = document.getElementById('fa-idmatch-btn');
+
+    var matchTags = fullMatchTags;
+
+    // Default new tags to unselected
+    matchTags.forEach(function(t){ if (!(t in ID_MATCH_TAGS)) ID_MATCH_TAGS[t] = false; });
+
+    // Preserve open state across rebuilds
+    var wasOpen = panel.classList.contains('open');
+
+    // Remove old rows
+    panel.querySelectorAll('.fa-idmatch-row').forEach(function(r){ r.remove(); });
+
+    matchTags.forEach(function(t) {
+      var checked = ID_MATCH_TAGS[t] !== false;
+      var name = tagName(t);
+      var row = document.createElement('div');
+      row.className = 'fa-idmatch-row' + (checked ? ' checked' : '');
+      row.innerHTML =
+        '<span class="fa-idmatch-check"><span class="fa-idmatch-tick">&#10003;</span></span>' +
+        '<span style="color:#475569;min-width:28px">' + t + '</span>' +
+        '<span>' + (name !== t ? name : '') + '</span>';
+      row.addEventListener('click', function(e) {
+        e.stopPropagation(); // keep panel open
+        ID_MATCH_TAGS[t] = !ID_MATCH_TAGS[t];
+        row.classList.toggle('checked', ID_MATCH_TAGS[t]);
+        updateIdMatchBtn();
+        // Rebuild colorMap and re-highlight without full grid rebuild
+        currentColorMap = buildIdColorMap(parsedMsgs);
+        applyIdMatchHighlights();
+        buildIdMatchPanel();
+      });
+      panel.appendChild(row);
+    });
+
+    if (wasOpen) panel.classList.add('open');
+
+    // Re-apply any active search filter after row rebuild
+    var searchEl = document.getElementById('fa-idmatch-search');
+    if (searchEl && searchEl.value.trim()) {
+      var q = searchEl.value.trim().toLowerCase();
+      panel.querySelectorAll('.fa-idmatch-row').forEach(function(r) {
+        r.style.display = r.textContent.toLowerCase().indexOf(q) !== -1 ? '' : 'none';
+      });
+    }
+
+    updateIdMatchBtn();
+
+    // Wire button toggle (once)
+    if (!btn._wired) {
+      btn._wired = true;
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        panel.classList.toggle('open');
+        if (panel.classList.contains('open')) {
+          var s = document.getElementById('fa-idmatch-search');
+          if (s) { s.value = ''; s.dispatchEvent(new Event('input')); s.focus(); }
+        }
+      });
+      var saveBtn = document.getElementById('fa-idmatch-save');
+      if (saveBtn) saveBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        saveIdMatchConfig();
+      });
+
+      var searchEl = document.getElementById('fa-idmatch-search');
+      if (searchEl) {
+        searchEl.addEventListener('click', function(e){ e.stopPropagation(); });
+        searchEl.addEventListener('input', function() {
+          var q = searchEl.value.trim().toLowerCase();
+          panel.querySelectorAll('.fa-idmatch-row').forEach(function(r) {
+            var text = r.textContent.toLowerCase();
+            r.style.display = (!q || text.indexOf(q) !== -1) ? '' : 'none';
+          });
+        });
+      }
+      document.getElementById('fa-idmatch-all').addEventListener('click', function(e) {
+        e.stopPropagation();
+        var allOn = Object.keys(ID_MATCH_TAGS).every(function(t){ return ID_MATCH_TAGS[t]; });
+        Object.keys(ID_MATCH_TAGS).forEach(function(t){ ID_MATCH_TAGS[t] = !allOn; });
+        panel.querySelectorAll('.fa-idmatch-row').forEach(function(r) {
+          r.classList.toggle('checked', !allOn);
+        });
+        updateIdMatchBtn();
+        currentColorMap = buildIdColorMap(parsedMsgs);
+        applyIdMatchHighlights();
+        buildIdMatchPanel();
+      });
+      document.addEventListener('click', function(e) {
+        if (!document.getElementById('fa-idmatch-wrap').contains(e.target)) {
+          panel.classList.remove('open');
+        }
+      });
+    }
+  }
+
+  function updateIdMatchBtn() {
+    var btn = document.getElementById('fa-idmatch-btn');
+    var anyOn = Object.keys(ID_MATCH_TAGS).some(function(t){ return ID_MATCH_TAGS[t]; });
+    btn.classList.toggle('has-active', anyOn);
+  }
+
+  function saveIdMatchConfig() {
+    var saveBtn = document.getElementById('fa-idmatch-save');
+    fetch('/config/fix-idmatch.json', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tags: ID_MATCH_TAGS })
+    }).then(function(r) {
+      if (r.ok && saveBtn) {
+        saveBtn.classList.add('saved');
+        setTimeout(function(){ saveBtn.classList.remove('saved'); }, 1500);
+      }
+    }).catch(function(){});
+  }
+
+  function getActiveExecTypes() {
+    var active = {};
+    Object.keys(LEGEND_ACTIVE).forEach(function(k){ if (LEGEND_ACTIVE[k]) active[k] = true; });
+    return active;
+  }
+
+  function render(msgs) {
+    var activeTypes = getActiveExecTypes();
+    // If no legend built yet (first render) or all active, skip filter; otherwise filter
+    var hasFilter = Object.keys(LEGEND_ACTIVE).length > 0;
+    var sorted = sortByTag60(msgs).filter(function(m) {
+      if (!hasFilter) return true;
+      var et = m['150'];
+      if (!et) return true; // messages without ExecType always shown
+      return activeTypes[et];
+    });
+    var allTags = collectAllTags(sorted);
+    currentColorMap = buildIdColorMap(sorted);
+    // Compute full tag list (all sources) for the dropdown — independent of selection
+    var _fullMap = buildIdColorMap(sorted, true);
+    var _tagSet = {};
+    sorted.forEach(function(m){ Object.keys(m).forEach(function(t){ if (_fullMap[m[t]] !== undefined) _tagSet[t] = true; }); });
+    fullMatchTags = Object.keys(_tagSet).sort(function(a,b){ return parseInt(a)-parseInt(b); });
+    var grid = document.getElementById('fa-grid');
+    var placeholder = document.getElementById('fa-placeholder');
+    grid.innerHTML = '';
+    placeholder.style.display = 'none';
+    grid.style.display = 'flex';
+    document.getElementById('fa-legend').style.display = 'flex';
+    buildLegend(parsedMsgs);
+    buildIdMatchPanel();
+
+    // ── Left column ──
+    var leftCol = document.createElement('div');
+    leftCol.className = 'fa-tags-col';
+    var hdr = document.createElement('div');
+    hdr.className = 'fa-tags-col-header';
+    hdr.textContent = 'TAG · NAME';
+    leftCol.appendChild(hdr);
+    allTags.forEach(function(t) {
+      var row = document.createElement('div');
+      row.className = 'fa-tag-row' + (KEY_TAGS[t] ? ' key-tag' : '') + (t === '150' ? ' tag-150-row' : '');
+      var n = tagName(t);
+      var d = tagDesc(t);
+      if (d) row.setAttribute('data-desc', d);
+      row.setAttribute('data-tag', t);
+      row.addEventListener('click', function() {
+        // If hidden, clicking the thin line restores it
+        if (row.classList.contains('row-hidden')) {
+          eye.click(); return;
+        }
+        var isHl = row.classList.toggle('row-hl');
+        grid.querySelectorAll('.fa-cell[data-tag="' + t + '"]').forEach(function(c) {
+          c.classList.toggle('row-hl', isHl);
+        });
+      });
+      var num = document.createElement('span'); num.className = 'fa-tag-num'; num.textContent = t;
+      var name = document.createElement('span'); name.className = 'fa-tag-name';
+      name.textContent = n || '\u2014';
+      // Eye toggle icon
+      var eye = document.createElement('span'); eye.className = 'fa-row-eye'; eye.title = 'Hide row';
+      var EYE_OPEN = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+      var EYE_SHUT = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+      eye.innerHTML = EYE_OPEN;
+      eye.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var hidden = row.classList.toggle('row-hidden');
+        eye.innerHTML = hidden ? EYE_SHUT : EYE_OPEN;
+        eye.title = hidden ? 'Show row' : 'Hide row';
+        grid.querySelectorAll('.fa-cell[data-tag="' + t + '"]').forEach(function(c) {
+          c.classList.toggle('row-hidden', hidden);
+        });
+      });
+      row.appendChild(num); row.appendChild(name); row.appendChild(eye);
+      leftCol.appendChild(row);
+    });
+    grid.appendChild(leftCol);
+
+    // ── Message columns ──
+    sorted.forEach(function(msg, ci) {
+      var et = (msg['150'] || '').toUpperCase();
+      var theme = EXEC_THEME[et] || { label: et || '?', color:'#475569', bg:'rgba(255,255,255,0.03)' };
+      var col = document.createElement('div');
+      col.className = 'fa-msg-col';
+      col.style.background = theme.bg;
+
+      // Header
+      var hd = document.createElement('div');
+      hd.className = 'fa-col-header';
+      hd.style.borderLeft = '2px solid ' + theme.color;
+      // Timestamp info
+      var ts = document.createElement('div'); ts.className = 'fa-col-ts';
+      var t60 = msg['60'] || ''; var t52 = msg['52'] || '';
+      ts.innerHTML = '<em>T60:</em> ' + (t60 ? t60.replace('T',' ') : '\u2014') + '<br><em>T52:</em> ' + (t52 ? t52.replace('T',' ') : '\u2014');
+      // Badge
+      var badge = document.createElement('div'); badge.className = 'fa-col-badge';
+      badge.style.background = theme.bg; badge.style.color = theme.color;
+      badge.style.border = '1px solid ' + theme.color + '55';
+      badge.innerHTML = '<span style="font-size:11px">\u25cf</span> ' + et + ' \u00b7 ' + theme.label;
+      // Summary
+      var sum = document.createElement('div'); sum.className = 'fa-col-sum';
+      var sym = msg['55'] || msg['48'] || ''; var side = msg['54'] || ''; var qty = msg['38'] || '';
+      var px = msg['44'] || ''; var ord = msg['37'] ? shortenVal(msg['37'], 14) : '';
+      sum.textContent = [sym, side==='1'?'BUY':side==='2'?'SELL':side, qty&&'Q:'+qty, px&&'P:'+px, ord&&'#'+ord].filter(Boolean).join(' \u00b7 ');
+      sum.title = sum.textContent;
+      // Collapse button
+      var collapseBtn = document.createElement('button');
+      collapseBtn.className = 'fa-col-collapse';
+      collapseBtn.title = 'Collapse column';
+      collapseBtn.innerHTML = '<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>';
+      collapseBtn.addEventListener('click', function() {
+        var isCollapsed = col.classList.toggle('collapsed');
+        collapseBtn.title = isCollapsed ? 'Expand column' : 'Collapse column';
+      });
+      hd.appendChild(collapseBtn);
+      hd.appendChild(ts); hd.appendChild(badge); hd.appendChild(sum);
+      col.appendChild(hd);
+
+      // Cells
+      allTags.forEach(function(t) {
+        var cell = document.createElement('div');
+        cell.setAttribute('data-tag', t);
+        var val = msg[t] || '';
+        cell.setAttribute('data-val', val);
+        cell.className = 'fa-cell' + (val ? ' has-val' : '') + (t === '150' ? ' tag-150' : '');
+        // ExecType cell gets coloured text
+        if (t === '150' && val) {
+          cell.style.color = theme.color;
+          cell.style.fontWeight = '700';
+        }
+        // ID highlight
+        if (val && currentColorMap[val] !== undefined) {
+          var pal = ID_PALETTE[currentColorMap[val]];
+          cell.style.background = pal.bg;
+          cell.style.borderLeft = '2px solid ' + pal.bd;
+          cell.style.paddingLeft = '10px';
+          cell.classList.add('id-match');
+        }
+        cell.textContent = shortenVal(val, 28);
+        // title intentionally omitted — custom tooltip handles hover display
+        col.appendChild(cell);
+      });
+      grid.appendChild(col);
+    });
+
+    document.getElementById('fa-status').textContent =
+      sorted.length + ' messages \u00b7 ' + allTags.length + ' unique tags';
+    // Enable X-check and Diagram after render
+    var xcBtn = document.getElementById('fa-xcheck-btn');
+    if (xcBtn) { xcBtn.disabled = false; xcBtn.classList.remove('active'); }
+    var diagBtn = document.getElementById('fa-diagram-btn');
+    if (diagBtn) diagBtn.disabled = false;
+  }
+
+  // Noise values to skip — too common/short to be meaningful IDs
+  var XC_SKIP = { '0':1,'1':1,'2':1,'3':1,'4':1,'5':1,'6':1,'7':1,'8':1,'9':1,
+    'Y':1,'N':1,'000':1,'DAY':1,'GTC':1,'IOC':1,'BUY':1,'SELL':1,
+    'FIX.4.2':1,'FIX.4.4':1,'BLOCK':1,'GMT':1,'EUR':1,'USD':1,'GBP':1,'CHF':1 };
+
+  function runXCheck() {
+    var grid = document.getElementById('fa-grid');
+    var xcBtn = document.getElementById('fa-xcheck-btn');
+    var statusEl = document.getElementById('fa-status');
+    if (!grid) return;
+
+    // Toggle off
+    if (xcBtn.classList.contains('active')) {
+      grid.querySelectorAll('.xc-hl').forEach(function(c) {
+        c.classList.remove('xc-hl');
+        c.style.removeProperty('--xc-bg');
+        c.style.removeProperty('--xc-bd');
+      });
+      xcBtn.classList.remove('active');
+      xcBtn.textContent = '\u2717 X-CHECK';
+      statusEl.textContent = statusEl.getAttribute('data-base') || '';
+      return;
+    }
+
+    // Scan every cell for its full value
+    var valueMap = {}; // value -> [cell, ...]
+    grid.querySelectorAll('.fa-cell[data-tag]').forEach(function(cell) {
+      var val = cell.title;
+      if (!val || val.length < 5) return;       // too short
+      if (XC_SKIP[val]) return;                 // noise
+      if (/^\d{1,4}$/.test(val)) return;        // pure short numbers
+      if (!valueMap[val]) valueMap[val] = [];
+      valueMap[val].push(cell);
+    });
+
+    // Keep only values appearing in 2+ cells
+    var matches = Object.keys(valueMap).filter(function(v) { return valueMap[v].length > 1; });
+
+    // Assign a palette colour to each unique matching value
+    var colorIdx = 0;
+    matches.forEach(function(val) {
+      var pal = ID_PALETTE[colorIdx % ID_PALETTE.length];
+      colorIdx++;
+      valueMap[val].forEach(function(cell) {
+        cell.classList.add('xc-hl');
+        cell.style.setProperty('--xc-bg', pal.bg);
+        cell.style.setProperty('--xc-bd', pal.bd);
+      });
+    });
+
+    xcBtn.classList.add('active');
+    xcBtn.textContent = '\u2717 X-CHECK';
+    var base = document.getElementById('fa-status').getAttribute('data-base') || document.getElementById('fa-status').textContent;
+    statusEl.setAttribute('data-base', base);
+    statusEl.textContent = base + ' \u00b7 ' + matches.length + ' common IDs \u00b7 click any highlight to hide';
+    grid.removeEventListener('click', xcClickHandler);
+    grid.addEventListener('click', xcClickHandler);
+  }
+
+  function xcClickHandler(e) {
+    var cell = e.target.closest('.xc-hl');
+    if (!cell) return;
+    e.stopPropagation();
+    var val = cell.title;
+    var grid = document.getElementById('fa-grid');
+    grid.querySelectorAll('.xc-hl').forEach(function(c) {
+      if (c.title === val) {
+        c.classList.remove('xc-hl');
+        c.style.removeProperty('--xc-bg');
+        c.style.removeProperty('--xc-bd');
+      }
+    });
+  }
+
+  function init() {
+    var fileInput = document.getElementById('fa-file-input');
+    var runBtn = document.getElementById('fa-run-btn');
+    var statusEl = document.getElementById('fa-status');
+
+    fileInput.addEventListener('change', function() {
+      var file = fileInput.files[0];
+      if (!file) return;
+      document.getElementById('fa-file-label').innerHTML =
+        '&#128194; ' + file.name +
+        '<input type="file" id="fa-file-input" accept=".txt,.log,.fix,.csv">';
+      // Re-attach after innerHTML replacement
+      document.getElementById('fa-file-input').addEventListener('change', arguments.callee);
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        rawText = e.target.result;
+        parsedMsgs = parseFile(rawText);
+        LEGEND_ACTIVE = {};
+        ID_MATCH_TAGS = {};
+        currentColorMap = {};
+        statusEl.textContent = parsedMsgs.length + ' messages parsed — click RUN';
+        runBtn.disabled = parsedMsgs.length === 0;
+      };
+      reader.readAsText(file);
+    });
+
+    runBtn.addEventListener('click', function() {
+      if (parsedMsgs.length === 0) return;
+      // Ensure xlsx field names are loaded before rendering
+      fieldsLoaded.then(function(){ render(parsedMsgs); }).catch(function(){ render(parsedMsgs); });
+    });
+
+    document.getElementById('fa-xcheck-btn').addEventListener('click', runXCheck);
+
+    // DIAGRAM / MSG toggle
+    var diagramVisible = false;
+    document.getElementById('fa-diagram-btn').addEventListener('click', function() {
+      diagramVisible = !diagramVisible;
+      var btn        = document.getElementById('fa-diagram-btn');
+      var gridWrapEl = document.getElementById('fa-grid-wrap');
+      var diagPanel  = document.getElementById('fa-diagram-panel');
+      if (diagramVisible) {
+        gridWrapEl.style.display = 'none';
+        diagPanel.style.display  = 'flex';
+        drawDiagram(parsedMsgs);
+        btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg> MSG';
+      } else {
+        gridWrapEl.style.display = '';
+        diagPanel.style.display  = 'none';
+        btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="5" height="5"/><rect x="16" y="3" width="5" height="5"/><rect x="9" y="16" width="5" height="5"/><line x1="5.5" y1="8" x2="5.5" y2="11"/><line x1="18.5" y1="8" x2="18.5" y2="11"/><line x1="5.5" y1="11" x2="18.5" y2="11"/><line x1="11.5" y1="11" x2="11.5" y2="16"/></svg> DIAGRAM';
+      }
+    });
+
+    // Diagram panel — resizable divider
+    (function() {
+      var divider = document.getElementById('fa-diag-divider');
+      var topPane = document.getElementById('fa-diag-top');
+      if (!divider || !topPane) return;
+      var dragging = false, startY = 0, startH = 0;
+      divider.addEventListener('mousedown', function(e) {
+        dragging = true;
+        startY = e.clientY;
+        startH = topPane.getBoundingClientRect().height;
+        document.body.style.cursor = 'ns-resize';
+        document.body.style.userSelect = 'none';
+        e.preventDefault();
+      });
+      window.addEventListener('mousemove', function(e) {
+        if (!dragging) return;
+        var delta = e.clientY - startY;
+        var newH  = Math.max(80, Math.min(startH + delta, 480));
+        topPane.style.flex = '0 0 ' + newH + 'px';
+      });
+      window.addEventListener('mouseup', function() {
+        if (!dragging) return;
+        dragging = false;
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+      });
+    })();
+
+    // Cell hover tooltip
+    var tip     = document.getElementById('fa-cell-tip');
+    var tipTag  = document.getElementById('fa-tip-tag');
+    var tipName = document.getElementById('fa-tip-name');
+    var tipVal  = document.getElementById('fa-tip-val');
+    var gridWrap = document.getElementById('fa-grid-wrap');
+    var activeTagRow = null;
+    gridWrap.addEventListener('mouseover', function(e) {
+      var cell = e.target.closest('.fa-cell');
+      if (!cell) { tip.style.display = 'none'; return; }
+      var t   = cell.getAttribute('data-tag');
+      var val = cell.getAttribute('data-val');
+      if (!t) return;
+      var name = tagName(t);
+      tipTag.textContent  = 'Tag ' + t;
+      tipName.textContent = (name && name !== t) ? name : '';
+      tipVal.textContent  = val || '—';
+      tip.style.display = 'block';
+      // Highlight the left-side tag row
+      if (activeTagRow) activeTagRow.classList.remove('row-hover');
+      activeTagRow = document.querySelector('.fa-tag-row[data-tag="' + t + '"]');
+      if (activeTagRow) activeTagRow.classList.add('row-hover');
+    });
+    gridWrap.addEventListener('mousemove', function(e) {
+      if (tip.style.display === 'none') return;
+      var x = e.clientX + 14, y = e.clientY + 14;
+      if (x + 330 > window.innerWidth)  x = e.clientX - 330;
+      if (y + 80  > window.innerHeight) y = e.clientY - 80;
+      tip.style.left = x + 'px';
+      tip.style.top  = y + 'px';
+    });
+    gridWrap.addEventListener('mouseleave', function() {
+      tip.style.display = 'none';
+      if (activeTagRow) { activeTagRow.classList.remove('row-hover'); activeTagRow = null; }
+    });
+    gridWrap.addEventListener('mouseout', function(e) {
+      if (!e.target.closest('.fa-cell')) {
+        tip.style.display = 'none';
+        if (activeTagRow) { activeTagRow.classList.remove('row-hover'); activeTagRow = null; }
+      }
+    });
+
+    // Copy cell value on click
+    var copyTip = document.getElementById('fa-copy-tip');
+    var copyTimer = null;
+    gridWrap.addEventListener('click', function(e) {
+      var cell = e.target.closest('.fa-cell');
+      if (!cell) return;
+      var val = cell.getAttribute('data-val');
+      if (!val) return;
+      navigator.clipboard.writeText(val).then(function() {
+        copyTip.style.left = (e.clientX - 20) + 'px';
+        copyTip.style.top  = (e.clientY - 32) + 'px';
+        copyTip.classList.add('show');
+        clearTimeout(copyTimer);
+        copyTimer = setTimeout(function() { copyTip.classList.remove('show'); }, 900);
+      }).catch(function(){});
+    });
+
+    document.getElementById('fa-exclude-input').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' && parsedMsgs.length > 0) {
+        fieldsLoaded.then(function(){ render(parsedMsgs); }).catch(function(){ render(parsedMsgs); });
+      }
+    });
+
+    document.getElementById('fa-exclude-save').addEventListener('click', function() {
+      var val = document.getElementById('fa-exclude-input').value.trim();
+      var tags = val ? val.split(',').map(function(t){ return t.trim(); }).filter(Boolean) : [];
+      var btn = document.getElementById('fa-exclude-save');
+      fetch('/config/fix-exclude.json', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ excludedTags: tags })
+      }).then(function(r) {
+        if (r.ok) {
+          btn.classList.add('saved');
+          setTimeout(function(){ btn.classList.remove('saved'); }, 1500);
+        }
+      }).catch(function(){});
+    });
+
+    // Auto-load configs
+    fetch('/config/fix-exclude.json').then(function(r){
+      if (r.ok) return r.json();
+    }).then(function(cfg) {
+      if (cfg && Array.isArray(cfg.excludedTags) && cfg.excludedTags.length > 0) {
+        document.getElementById('fa-exclude-input').value = cfg.excludedTags.join(', ');
+      }
+    }).catch(function(){});
+
+    fetch('/config/fix-idmatch.json').then(function(r){
+      if (r.ok) return r.json();
+    }).then(function(cfg) {
+      if (cfg && cfg.tags && typeof cfg.tags === 'object') {
+        Object.keys(cfg.tags).forEach(function(t){ ID_MATCH_TAGS[t] = cfg.tags[t]; });
+      }
+    }).catch(function(){});
+
+    // Auto-load sample file and pre-load field definitions together
+    Promise.all([
+      fetch('/data/QA-fix-msg.txt').then(function(r){ return r.text(); }),
+      fieldsLoaded
+    ]).then(function(results) {
+      rawText = results[0];
+      parsedMsgs = parseFile(rawText);
+      if (parsedMsgs.length > 0) {
+        statusEl.textContent = parsedMsgs.length + ' sample messages ready — click RUN';
+        runBtn.disabled = false;
+      }
+    }).catch(function(){});
+  }
+
+  // ── Diagram ──────────────────────────────────────────────────────
+  var DIAG_COLORS = ['#14B8A6','#0891b2','#6366f1','#0f766e','#38bdf8','#818cf8','#2dd4bf','#22d3ee','#4ade80','#34d399'];
+
+  function drawDiagram(msgs) {
+    var panel = document.getElementById('fa-diagram-panel');
+    var svg   = document.getElementById('fa-diagram-svg');
+    var NS    = 'http://www.w3.org/2000/svg';
+    svg.innerHTML = '';
+
+    // Step 1: For each ORDER_ID (10914) pick the row with max ORDER_VID (10916)
+    var orderMap = {};
+    msgs.forEach(function(m) {
+      var oid = m['10914']; if (!oid) return;
+      var vid = parseInt(m['10916'] || '0', 10);
+      if (!orderMap[oid] || vid > (orderMap[oid]._vid || 0)) {
+        orderMap[oid] = m; orderMap[oid]._vid = vid;
+      }
+    });
+    if (!Object.keys(orderMap).length) {
+      var msg = document.createElementNS(NS, 'text');
+      msg.setAttribute('x','50%'); msg.setAttribute('y','50%');
+      msg.setAttribute('text-anchor','middle'); msg.setAttribute('fill','rgba(249,115,22,0.5)');
+      msg.setAttribute('font-family','JetBrains Mono,monospace'); msg.setAttribute('font-size','12');
+      msg.textContent = 'No tag 10914 data found';
+      svg.appendChild(msg); return;
+    }
+
+    // Step 2: Build node objects
+    var nodes = {};
+    Object.keys(orderMap).forEach(function(oid) {
+      var m = orderMap[oid];
+      nodes[oid] = {
+        id: oid, appCode: m['7203'] || '?', destId: m['10010'] || '?',
+        parentId: m['10910'] || null, children: [], x:0, y:0, color:'#1a2744'
+      };
+    });
+
+    // Step 3: Tree linkage — roots have no parent
+    var roots = [];
+    Object.keys(nodes).forEach(function(oid) {
+      var n = nodes[oid];
+      if (n.parentId && nodes[n.parentId]) { nodes[n.parentId].children.push(n); }
+      else { roots.push(n); }
+    });
+
+    // Step 4: Assign colors depth-first
+    var ci = 0;
+    function assignColor(n) { n.color = DIAG_COLORS[ci++ % DIAG_COLORS.length]; n.children.forEach(assignColor); }
+    roots.forEach(assignColor);
+
+    // Step 5: Leaf-count tree layout
+    var COL_W = 170, ROW_H = 110, MX = 80, MY = 80;
+    function leafCount(n) { return n.children.length ? n.children.reduce(function(s,c){ return s+leafCount(c); },0) : 1; }
+    function layout(n, depth, yStart) {
+      var lc = leafCount(n);
+      n.x = MX + depth * COL_W;
+      n.y = MY + yStart + lc * ROW_H / 2 - ROW_H / 2;
+      var cy = yStart;
+      n.children.forEach(function(c){ var clc = leafCount(c); layout(c, depth+1, cy); cy += clc * ROW_H; });
+    }
+    var ry = 0;
+    roots.forEach(function(r){ layout(r, 0, ry); ry += leafCount(r) * ROW_H; });
+
+    // Step 6: SVG dimensions
+    var all  = Object.values(nodes);
+    var svgW = Math.max(all.reduce(function(m,n){ return Math.max(m,n.x); },0) + MX + 120, 600);
+    var svgH = Math.max(all.reduce(function(m,n){ return Math.max(m,n.y); },0) + MY + 70,  300);
+    var vb   = { x:0, y:0, w:svgW, h:svgH };
+    svg.setAttribute('viewBox', '0 0 '+svgW+' '+svgH);
+
+    var RX = 29, RY = 29; // equal → circle (−40% total)
+
+    // Draw defs (clip paths)
+    var defs = document.createElementNS(NS, 'defs');
+    all.forEach(function(n) {
+      var cp = document.createElementNS(NS, 'clipPath');
+      cp.setAttribute('id', 'cp-'+n.id.replace(/\W/g,'_'));
+      var ce = document.createElementNS(NS, 'ellipse'); ce.setAttribute('rx', RX); ce.setAttribute('ry', RY);
+      cp.appendChild(ce); defs.appendChild(cp);
+    });
+    svg.appendChild(defs);
+
+    // Background
+    var bg = document.createElementNS(NS,'rect');
+    bg.setAttribute('width', svgW); bg.setAttribute('height', svgH);
+    bg.setAttribute('fill','#060e1c'); svg.appendChild(bg);
+
+    // Draw edges
+    all.forEach(function(n) {
+      n.children.forEach(function(c) {
+        var x1=n.x+RX, y1=n.y, x2=c.x-RX, y2=c.y, mx=(x1+x2)/2;
+        var path = document.createElementNS(NS,'path');
+        path.setAttribute('d','M '+x1+' '+y1+' C '+mx+' '+y1+' '+mx+' '+y2+' '+x2+' '+y2);
+        path.setAttribute('fill','none');
+        path.setAttribute('stroke','rgba(20,184,166,0.3)');
+        path.setAttribute('stroke-width','1.5');
+        svg.appendChild(path);
+        // endpoint dot
+        var dot = document.createElementNS(NS,'circle');
+        dot.setAttribute('cx',x2); dot.setAttribute('cy',y2); dot.setAttribute('r','3');
+        dot.setAttribute('fill','rgba(20,184,166,0.5)');
+        svg.appendChild(dot);
+      });
+    });
+
+    // Draw nodes
+    all.forEach(function(n) {
+      var g = document.createElementNS(NS,'g');
+      g.setAttribute('transform','translate('+n.x+','+n.y+')');
+
+      // Glow ring
+      var glow = document.createElementNS(NS,'circle');
+      glow.setAttribute('r', RX+6);
+      glow.setAttribute('fill','none');
+      glow.setAttribute('stroke', n.color);
+      glow.setAttribute('stroke-width','1');
+      glow.setAttribute('opacity','0.22');
+      g.appendChild(glow);
+
+      // Drop shadow
+      var sh = document.createElementNS(NS,'circle');
+      sh.setAttribute('r', RX+1);
+      sh.setAttribute('cx','3'); sh.setAttribute('cy','5');
+      sh.setAttribute('fill','rgba(0,0,0,0.45)'); g.appendChild(sh);
+
+      // Main circle — dark navy base + colored stroke
+      var el = document.createElementNS(NS,'circle');
+      el.setAttribute('r', RX);
+      el.setAttribute('fill','#060e1c');
+      el.setAttribute('stroke', n.color);
+      el.setAttribute('stroke-width','1.2');
+      el.setAttribute('class','diag-main-circle'); g.appendChild(el);
+
+      // Colored inner fill (semi-transparent tint)
+      var tint = document.createElementNS(NS,'circle');
+      tint.setAttribute('r', RX);
+      tint.setAttribute('fill', n.color);
+      tint.setAttribute('opacity','0.15'); g.appendChild(tint);
+
+      // Divider
+      var divLine = document.createElementNS(NS,'line');
+      divLine.setAttribute('x1', String(-RX+8)); divLine.setAttribute('y1','0');
+      divLine.setAttribute('x2', String(RX-8));  divLine.setAttribute('y2','0');
+      divLine.setAttribute('stroke', n.color);
+      divLine.setAttribute('stroke-width','0.8');
+      divLine.setAttribute('opacity','0.5');
+      divLine.setAttribute('clip-path','url(#cp-'+n.id.replace(/\W/g,'_')+')');
+      g.appendChild(divLine);
+
+      // Top label — tag 7203 (APP_CODE)
+      var t1 = document.createElementNS(NS,'text');
+      t1.setAttribute('text-anchor','middle'); t1.setAttribute('y','-12');
+      t1.setAttribute('dominant-baseline','middle');
+      t1.setAttribute('fill','#ffffff'); t1.setAttribute('font-weight','700');
+      t1.setAttribute('font-size','9'); t1.setAttribute('font-family','JetBrains Mono,monospace');
+      t1.textContent = n.appCode.length>10 ? n.appCode.slice(0,10)+'…' : n.appCode;
+      g.appendChild(t1);
+
+      // Bottom label — tag 10010 (DEST_ID)
+      var t2 = document.createElementNS(NS,'text');
+      t2.setAttribute('text-anchor','middle'); t2.setAttribute('y','12');
+      t2.setAttribute('dominant-baseline','middle');
+      t2.setAttribute('fill', n.color);
+      t2.setAttribute('font-size','9'); t2.setAttribute('font-family','JetBrains Mono,monospace');
+      t2.textContent = n.destId.length>10 ? n.destId.slice(0,10)+'…' : n.destId;
+      g.appendChild(t2);
+
+      // Connector dots
+      [-RX, RX].forEach(function(cx) {
+        var dot = document.createElementNS(NS,'circle');
+        dot.setAttribute('cx',cx); dot.setAttribute('cy','0'); dot.setAttribute('r','4');
+        dot.setAttribute('fill','#060e1c');
+        dot.setAttribute('stroke', n.color); dot.setAttribute('stroke-width','1');
+        g.appendChild(dot);
+      });
+
+      // Mark group with node id for delegation
+      g.setAttribute('data-nid', n.id);
+      g.style.cursor = 'pointer';
+
+      svg.appendChild(g);
+    });
+
+    // Populate table with ALL nodes
+    var tbody = document.getElementById('fa-diag-tbody');
+    if (tbody) {
+      tbody.innerHTML = '';
+      all.forEach(function(n) {
+        var m  = orderMap[n.id];
+        var tr = document.createElement('tr');
+        tr.setAttribute('data-nid', n.id);
+        ['7203','10010','10914','10916','10910','10909'].forEach(function(t) {
+          var td = document.createElement('td');
+          td.textContent = (m && m[t]) ? m[t] : '—';
+          tr.appendChild(td);
+        });
+        // Row click → highlight node + row
+        tr.addEventListener('click', function() { selectNode(n.id); });
+        tbody.appendChild(tr);
+      });
+    }
+
+    function selectNode(nid) {
+      // SVG — deselect all, select clicked
+      svg.querySelectorAll('[data-nid]').forEach(function(gg) {
+        var mc = gg.querySelector('.diag-main-circle');
+        if (mc) mc.setAttribute('stroke-width','1.2');
+      });
+      var grp = svg.querySelector('[data-nid="'+nid+'"]');
+      if (grp) { var mc = grp.querySelector('.diag-main-circle'); if (mc) mc.setAttribute('stroke-width','2.8'); }
+      // Table — deselect all rows, select matching
+      var tb = document.getElementById('fa-diag-tbody');
+      if (tb) tb.querySelectorAll('tr').forEach(function(r){ r.classList.toggle('row-active', r.getAttribute('data-nid')===nid); });
+    }
+
+    // Single delegated click handler on SVG
+    svg.addEventListener('click', function(e) {
+      var grp = e.target.closest ? e.target.closest('[data-nid]') : null;
+      if (grp) {
+        selectNode(grp.getAttribute('data-nid'));
+      } else {
+        svg.querySelectorAll('[data-nid]').forEach(function(gg) {
+          var mc = gg.querySelector('.diag-main-circle');
+          if (mc) mc.setAttribute('stroke-width','1.2');
+        });
+        var tb = document.getElementById('fa-diag-tbody');
+        if (tb) tb.querySelectorAll('tr').forEach(function(r){ r.classList.remove('row-active'); });
+      }
+    });
+
+    // Pan & zoom
+    var isPan=false, px=0, py=0;
+    svg.onmousedown = function(e){ isPan=true; px=e.clientX; py=e.clientY; svg.style.cursor='grabbing'; };
+    window.addEventListener('mousemove', function(e){
+      if(!isPan) return;
+      var dx=(e.clientX-px)/svg.clientWidth*vb.w, dy=(e.clientY-py)/svg.clientHeight*vb.h;
+      vb.x-=dx; vb.y-=dy; px=e.clientX; py=e.clientY;
+      svg.setAttribute('viewBox',vb.x+' '+vb.y+' '+vb.w+' '+vb.h);
+    });
+    window.addEventListener('mouseup', function(){ isPan=false; svg.style.cursor='grab'; });
+    svg.addEventListener('wheel', function(e){
+      e.preventDefault();
+      var f=e.deltaY>0?1.12:0.9, r=svg.getBoundingClientRect();
+      var mx=(e.clientX-r.left)/r.width*vb.w+vb.x, my=(e.clientY-r.top)/r.height*vb.h+vb.y;
+      vb.w*=f; vb.h*=f; vb.x=mx-(mx-vb.x)*f; vb.y=my-(my-vb.y)*f;
+      svg.setAttribute('viewBox',vb.x+' '+vb.y+' '+vb.w+' '+vb.h);
+    },{passive:false});
+  }
+
+  // Fullscreen toggle
+  window.faToggleFullscreen = function() {
+    var wrap = document.querySelector('.fa-wrap');
+    var icon = document.getElementById('fa-max-icon');
+    var expand = '<path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3"/>';
+    var collapse = '<path d="M8 3v3a2 2 0 01-2 2H3m18 0h-3a2 2 0 01-2-2V3m0 18v-3a2 2 0 012-2h3M3 16h3a2 2 0 012 2v3"/>';
+    if (!document.fullscreenElement) {
+      wrap.requestFullscreen && wrap.requestFullscreen();
+      icon.innerHTML = collapse;
+    } else {
+      document.exitFullscreen && document.exitFullscreen();
+      icon.innerHTML = expand;
+    }
+  };
+  document.addEventListener('fullscreenchange', function() {
+    var icon = document.getElementById('fa-max-icon');
+    if (!icon) return;
+    var expand = '<path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3"/>';
+    var collapse = '<path d="M8 3v3a2 2 0 01-2 2H3m18 0h-3a2 2 0 01-2-2V3m0 18v-3a2 2 0 012-2h3M3 16h3a2 2 0 012 2v3"/>';
+    if (!document.fullscreenElement) icon.innerHTML = expand;
+    else icon.innerHTML = collapse;
+  });
+
+  // Init when tab is first activated
+  var faReady = false;
+  var origSwitch = window.switchTab;
+  window.switchTab = function(id, el) {
+    origSwitch(id, el);
+    if (id === 'fixanalyzer' && !faReady) { faReady = true; init(); }
+  };
 })();
 </script>
 </body>
