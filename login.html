@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign In — TRABA AI Labs</title>
+<link rel="stylesheet" href="/vendor/fonts.css">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background-color: #0A1F44;
+  font-family: 'Inter', sans-serif;
+  color: #F1F5F9;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* Grain texture */
+body::after {
+  content: ''; position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none; z-index: 0; opacity: 0.5;
+}
+
+/* Ambient gradients */
+.ambient {
+  position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background:
+    radial-gradient(ellipse 55% 45% at 70% 15%, rgba(20,184,166,0.10) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at 20% 80%, rgba(37,99,235,0.08) 0%, transparent 55%);
+}
+
+.card {
+  position: relative; z-index: 1;
+  width: 100%; max-width: 400px;
+  margin: 24px;
+  background: rgba(15, 28, 60, 0.85);
+  border: 1px solid rgba(20,184,166,0.15);
+  border-radius: 16px;
+  padding: 40px 36px 36px;
+  box-shadow:
+    0 0 0 1px rgba(20,184,166,0.06),
+    0 8px 32px rgba(0,0,0,0.45),
+    0 2px 8px rgba(0,0,0,0.3);
+  backdrop-filter: blur(12px);
+}
+
+/* Logo mark */
+.logo-wrap {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 32px;
+}
+.logo-icon {
+  width: 36px; height: 36px; border-radius: 9px;
+  background: linear-gradient(135deg, #14B8A6 0%, #0891b2 100%);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 12px rgba(20,184,166,0.3);
+  flex-shrink: 0;
+}
+.logo-text {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px; font-weight: 700;
+  letter-spacing: 0.1em; color: #F1F5F9;
+}
+.logo-sub {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px; letter-spacing: 0.08em;
+  color: rgba(20,184,166,0.7);
+  margin-top: 1px;
+}
+
+h1 {
+  font-family: 'Inter', sans-serif;
+  font-size: 22px; font-weight: 700;
+  letter-spacing: -0.03em;
+  color: #F1F5F9;
+  margin-bottom: 6px;
+}
+.subtitle {
+  font-size: 13px; color: rgba(148,163,184,0.7);
+  line-height: 1.5; margin-bottom: 28px;
+}
+
+.field { margin-bottom: 16px; }
+label {
+  display: block;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px; font-weight: 700;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: rgba(148,163,184,0.6);
+  margin-bottom: 7px;
+}
+
+input {
+  width: 100%; height: 42px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  padding: 0 14px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px; color: #F1F5F9;
+  outline: none;
+  transition: border-color 0.2s, background 0.2s;
+}
+input:focus {
+  border-color: rgba(20,184,166,0.5);
+  background: rgba(20,184,166,0.05);
+}
+input[readonly] {
+  color: rgba(148,163,184,0.5);
+  cursor: not-allowed;
+  background: rgba(255,255,255,0.02);
+  border-color: rgba(255,255,255,0.06);
+}
+input[type="password"] { letter-spacing: 0.15em; }
+
+.error-msg {
+  display: none;
+  align-items: center; gap: 8px;
+  background: rgba(239,68,68,0.08);
+  border: 1px solid rgba(239,68,68,0.2);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 18px;
+  font-size: 12px; color: #fca5a5;
+}
+.error-msg.visible { display: flex; }
+
+button[type="submit"] {
+  width: 100%; height: 44px; margin-top: 8px;
+  background: linear-gradient(135deg, #14B8A6 0%, #0891b2 100%);
+  border: none; border-radius: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: #fff; cursor: pointer;
+  box-shadow: 0 4px 16px rgba(20,184,166,0.25);
+  transition: opacity 0.2s, transform 0.15s;
+}
+button[type="submit"]:hover  { opacity: 0.9; transform: translateY(-1px); }
+button[type="submit"]:active { opacity: 1;   transform: translateY(0); }
+
+.lock-icon { color: rgba(20,184,166,0.7); flex-shrink: 0; }
+</style>
+</head>
+<body>
+<div class="ambient"></div>
+
+<div class="card">
+  <!-- Logo -->
+  <div class="logo-wrap">
+    <div class="logo-icon">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/>
+      </svg>
+    </div>
+    <div>
+      <div class="logo-text">TRABA AI LABS</div>
+      <div class="logo-sub">RESTRICTED ACCESS</div>
+    </div>
+  </div>
+
+  <h1>Sign in</h1>
+  <p class="subtitle">Enter your password to access this workspace.</p>
+
+  <!-- Error message -->
+  <div class="error-msg" id="error-msg">
+    <svg class="lock-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    Incorrect password. Please try again.
+  </div>
+
+  <form method="POST" action="/auth">
+    <!-- Pass the ?next= param through -->
+    <input type="hidden" name="next" id="next-field" value="/">
+
+    <div class="field">
+      <label>Username</label>
+      <input type="text" name="username" value="TRABAEU" readonly autocomplete="username">
+    </div>
+
+    <div class="field">
+      <label>Password</label>
+      <input type="password" name="password" id="password" autocomplete="current-password" autofocus placeholder="••••••••••">
+    </div>
+
+    <button type="submit">
+      Sign In &rarr;
+    </button>
+  </form>
+</div>
+
+<script>
+  // Populate the hidden "next" field from the URL query string
+  var params = new URLSearchParams(window.location.search);
+  var next   = params.get('next');
+  if (next) document.getElementById('next-field').value = next;
+
+  // Show error banner if ?error=1
+  if (params.get('error') === '1') {
+    document.getElementById('error-msg').classList.add('visible');
+    document.getElementById('password').value = '';
+  }
+</script>
+</body>
+</html>
