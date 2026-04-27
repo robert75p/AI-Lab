@@ -451,10 +451,40 @@ body::after {
   }
   .fa-diag-table th {
     font-size:9px; font-weight:700; color:#475569; letter-spacing:.06em;
-    padding:8px 16px 7px; text-align:left; white-space:nowrap;
+    padding:8px 10px 7px; text-align:left; white-space:nowrap;
     text-transform:uppercase; border-right:1px solid rgba(255,255,255,0.04);
+    cursor:grab; user-select:none; position:relative;
   }
+  .fa-diag-table th:active { cursor:grabbing; }
+  .fa-diag-table th.drag-over { background:rgba(20,184,166,0.12); color:#14B8A6; }
+  .fa-diag-table th.drag-src  { opacity:0.4; }
   .fa-diag-tagnum { color:#14B8A6; font-weight:400; }
+  .fa-col-toggle {
+    display:inline-flex; align-items:center; justify-content:center;
+    width:14px; height:14px; border-radius:3px; margin-left:4px;
+    color:rgba(148,163,184,0.4); font-size:10px; line-height:1;
+    vertical-align:middle; cursor:pointer; flex-shrink:0;
+    transition:color 0.15s, background 0.15s;
+  }
+  .fa-col-toggle:hover { color:#14B8A6; background:rgba(20,184,166,0.1); }
+  /* Collapsed column header */
+  .fa-diag-table th.col-collapsed {
+    width:22px; min-width:22px; max-width:22px;
+    padding:0; text-align:center; cursor:pointer;
+    overflow:hidden; color:rgba(148,163,184,0.25);
+  }
+  .fa-col-expand {
+    display:block; width:22px; height:100%; min-height:32px;
+    display:flex; align-items:center; justify-content:center;
+    color:rgba(20,184,166,0.4); font-size:11px;
+    transition:color 0.15s;
+  }
+  .fa-col-expand:hover { color:#14B8A6; }
+  /* Collapsed column cells */
+  .fa-diag-table td.col-collapsed {
+    width:22px; min-width:22px; max-width:22px;
+    padding:0; overflow:hidden; font-size:0; border-right:1px solid rgba(255,255,255,0.04);
+  }
   .fa-diag-table tbody tr {
     border-bottom:1px solid rgba(255,255,255,0.03);
     transition:background 0.15s;
@@ -463,7 +493,7 @@ body::after {
   .fa-diag-table tbody tr:hover { background:rgba(255,255,255,0.03); }
   .fa-diag-table tbody tr.row-active { background:rgba(20,184,166,0.07); }
   .fa-diag-table td {
-    font-size:9px; color:#94a3b8; padding:5px 16px;
+    font-size:9px; color:#94a3b8; padding:5px 10px;
     white-space:nowrap; border-right:1px solid rgba(255,255,255,0.04);
     transition:color 0.15s;
   }
@@ -753,16 +783,7 @@ body::after {
       <div class="fa-diag-divider" id="fa-diag-divider"></div>
       <div class="fa-diag-bottom" id="fa-diag-bottom">
         <table class="fa-diag-table" id="fa-diag-tags">
-          <thead>
-            <tr>
-              <th>APP_CODE <span class="fa-diag-tagnum">(7203)</span></th>
-              <th>DEST_ID <span class="fa-diag-tagnum">(10010)</span></th>
-              <th>ORDER_ID <span class="fa-diag-tagnum">(10914)</span></th>
-              <th>ORDER_VID <span class="fa-diag-tagnum">(10916)</span></th>
-              <th>PARENT_ORDER_ID <span class="fa-diag-tagnum">(10910)</span></th>
-              <th>PARENT_ORDER_VID <span class="fa-diag-tagnum">(10909)</span></th>
-            </tr>
-          </thead>
+          <thead id="fa-diag-thead"></thead>
           <tbody id="fa-diag-tbody"></tbody>
         </table>
       </div>
@@ -2479,6 +2500,111 @@ document.getElementById('json-input').addEventListener('input', ()=>{
   // ── Diagram ──────────────────────────────────────────────────────
   var DIAG_COLORS = ['#14B8A6','#0891b2','#6366f1','#0f766e','#38bdf8','#818cf8','#2dd4bf','#22d3ee','#4ade80','#34d399'];
 
+  // Persistent diagram table state (survives drawDiagram re-calls)
+  var DIAG_COL_STATE = [
+    { tag:'7203',  label:'APP_CODE',        collapsed:false },
+    { tag:'10010', label:'DEST_ID',         collapsed:false },
+    { tag:'10914', label:'ORDER_ID',        collapsed:false },
+    { tag:'10916', label:'ORDER_VID',       collapsed:false },
+    { tag:'10910', label:'PARENT_ORDER_ID', collapsed:false },
+    { tag:'10909', label:'PARENT_ORDER_VID',collapsed:false },
+    { tag:'150',   label:'EXEC_TYPE',       collapsed:false },
+  ];
+  var _diagOrderMap   = {};
+  var _diagAll        = [];
+  var _diagSelectNode = null;
+  var _diagDragSrcIdx = null;
+
+  function renderDiagTable() {
+    var thead = document.getElementById('fa-diag-thead');
+    var tbody = document.getElementById('fa-diag-tbody');
+    if (!thead || !tbody) return;
+
+    // ── Header ────────────────────────────────────────────────────
+    thead.innerHTML = '';
+    var hr = document.createElement('tr');
+
+    DIAG_COL_STATE.forEach(function(col, idx) {
+      var th = document.createElement('th');
+      th.setAttribute('draggable', 'true');
+
+      if (col.collapsed) {
+        th.className = 'col-collapsed';
+        th.title = 'Expand ' + col.label;
+        var exp = document.createElement('span');
+        exp.className = 'fa-col-expand';
+        exp.innerHTML = '&#8250;';
+        exp.addEventListener('click', function(e) {
+          e.stopPropagation();
+          col.collapsed = false;
+          renderDiagTable();
+        });
+        th.appendChild(exp);
+      } else {
+        th.innerHTML = col.label
+          + ' <span class="fa-diag-tagnum">('+col.tag+')</span>'
+          + ' <span class="fa-col-toggle" title="Collapse">&#8249;</span>';
+        th.querySelector('.fa-col-toggle').addEventListener('click', function(e) {
+          e.stopPropagation();
+          col.collapsed = true;
+          renderDiagTable();
+        });
+      }
+
+      // Drag events
+      th.addEventListener('dragstart', function(e) {
+        _diagDragSrcIdx = idx;
+        e.dataTransfer.effectAllowed = 'move';
+        setTimeout(function(){ th.classList.add('drag-src'); }, 0);
+      });
+      th.addEventListener('dragend', function() {
+        th.classList.remove('drag-src');
+        thead.querySelectorAll('th').forEach(function(t){ t.classList.remove('drag-over'); });
+      });
+      th.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        thead.querySelectorAll('th').forEach(function(t){ t.classList.remove('drag-over'); });
+        th.classList.add('drag-over');
+      });
+      th.addEventListener('dragleave', function() { th.classList.remove('drag-over'); });
+      th.addEventListener('drop', function(e) {
+        e.preventDefault();
+        th.classList.remove('drag-over');
+        if (_diagDragSrcIdx !== null && _diagDragSrcIdx !== idx) {
+          var moved = DIAG_COL_STATE.splice(_diagDragSrcIdx, 1)[0];
+          DIAG_COL_STATE.splice(idx, 0, moved);
+          _diagDragSrcIdx = null;
+          renderDiagTable();
+        }
+      });
+
+      hr.appendChild(th);
+    });
+    thead.appendChild(hr);
+
+    // ── Body ──────────────────────────────────────────────────────
+    tbody.innerHTML = '';
+    _diagAll.forEach(function(n) {
+      var m  = _diagOrderMap[n.id];
+      var tr = document.createElement('tr');
+      tr.setAttribute('data-nid', n.id);
+      DIAG_COL_STATE.forEach(function(col) {
+        var td = document.createElement('td');
+        if (col.collapsed) {
+          td.className = 'col-collapsed';
+        } else {
+          td.textContent = (m && m[col.tag]) ? m[col.tag] : '—';
+        }
+        tr.appendChild(td);
+      });
+      tr.addEventListener('click', function() {
+        if (_diagSelectNode) _diagSelectNode(n.id);
+      });
+      tbody.appendChild(tr);
+    });
+  }
+
   function drawDiagram(msgs) {
     var panel = document.getElementById('fa-diagram-panel');
     var svg   = document.getElementById('fa-diagram-svg');
@@ -2659,37 +2785,23 @@ document.getElementById('json-input').addEventListener('input', ()=>{
       svg.appendChild(g);
     });
 
-    // Populate table with ALL nodes
-    var tbody = document.getElementById('fa-diag-tbody');
-    if (tbody) {
-      tbody.innerHTML = '';
-      all.forEach(function(n) {
-        var m  = orderMap[n.id];
-        var tr = document.createElement('tr');
-        tr.setAttribute('data-nid', n.id);
-        ['7203','10010','10914','10916','10910','10909'].forEach(function(t) {
-          var td = document.createElement('td');
-          td.textContent = (m && m[t]) ? m[t] : '—';
-          tr.appendChild(td);
-        });
-        // Row click → highlight node + row
-        tr.addEventListener('click', function() { selectNode(n.id); });
-        tbody.appendChild(tr);
-      });
-    }
+    // Store for re-renders (drag / collapse)
+    _diagOrderMap = orderMap;
+    _diagAll      = all;
 
     function selectNode(nid) {
-      // SVG — deselect all, select clicked
       svg.querySelectorAll('[data-nid]').forEach(function(gg) {
         var mc = gg.querySelector('.diag-main-circle');
         if (mc) mc.setAttribute('stroke-width','1.2');
       });
       var grp = svg.querySelector('[data-nid="'+nid+'"]');
       if (grp) { var mc = grp.querySelector('.diag-main-circle'); if (mc) mc.setAttribute('stroke-width','2.8'); }
-      // Table — deselect all rows, select matching
       var tb = document.getElementById('fa-diag-tbody');
       if (tb) tb.querySelectorAll('tr').forEach(function(r){ r.classList.toggle('row-active', r.getAttribute('data-nid')===nid); });
     }
+    _diagSelectNode = selectNode;
+
+    renderDiagTable();
 
     // Single delegated click handler on SVG
     svg.addEventListener('click', function(e) {
