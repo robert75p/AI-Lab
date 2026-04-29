@@ -438,8 +438,40 @@ body::after {
   .fa-diag-divider:hover::before { background:rgba(20,184,166,0.75); }
   .fa-diag-bottom {
     flex:1; background:#080f20; min-height:60px;
-    overflow:auto; padding:0;
+    overflow:auto; padding:0; display:flex; flex-direction:column;
   }
+  .fa-diag-search-bar {
+    flex-shrink:0; display:flex; align-items:center; gap:8px;
+    padding:6px 12px; background:#080f20;
+    border-bottom:1px solid rgba(255,255,255,0.05);
+    position:sticky; top:0; z-index:3;
+  }
+  .fa-diag-search-wrap {
+    display:flex; align-items:center; gap:6px;
+    background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08);
+    border-radius:5px; padding:0 8px; height:26px; flex:1;
+    transition:border-color 0.2s;
+  }
+  .fa-diag-search-wrap:focus-within { border-color:rgba(20,184,166,0.4); }
+  .fa-diag-search-wrap svg { flex-shrink:0; color:rgba(148,163,184,0.35); }
+  .fa-diag-search-input {
+    background:none; border:none; outline:none; width:100%;
+    font-family:'JetBrains Mono',monospace; font-size:9px;
+    color:#94a3b8; letter-spacing:.04em;
+  }
+  .fa-diag-search-input::placeholder { color:rgba(148,163,184,0.3); }
+  .fa-diag-search-label {
+    font-family:'JetBrains Mono',monospace; font-size:8px;
+    letter-spacing:.08em; color:rgba(148,163,184,0.35);
+    text-transform:uppercase; white-space:nowrap; flex-shrink:0;
+  }
+  .fa-diag-table-wrap { flex:1; overflow:auto; }
+  /* Tag search highlight */
+  .fa-diag-table th.tag-match { color:#14B8A6; background:rgba(20,184,166,0.08); }
+  .fa-diag-table th.tag-no-match { opacity:0.25; }
+  /* Value search highlight */
+  .fa-diag-table td.val-match { color:#ffffff !important; background:rgba(20,184,166,0.12); }
+  .fa-diag-table tr.val-hidden { display:none; }
   .fa-diag-table {
     border-collapse:collapse; width:100%; font-family:'JetBrains Mono',monospace;
   }
@@ -782,10 +814,24 @@ body::after {
       </div>
       <div class="fa-diag-divider" id="fa-diag-divider"></div>
       <div class="fa-diag-bottom" id="fa-diag-bottom">
-        <table class="fa-diag-table" id="fa-diag-tags">
-          <thead id="fa-diag-thead"></thead>
-          <tbody id="fa-diag-tbody"></tbody>
-        </table>
+        <div class="fa-diag-search-bar">
+          <span class="fa-diag-search-label">Values</span>
+          <div class="fa-diag-search-wrap">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input class="fa-diag-search-input" id="fa-diag-val-search" type="text" placeholder="Search values…" autocomplete="off">
+          </div>
+          <span class="fa-diag-search-label">Tags</span>
+          <div class="fa-diag-search-wrap">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input class="fa-diag-search-input" id="fa-diag-tag-search" type="text" placeholder="Tag number or name…" autocomplete="off">
+          </div>
+        </div>
+        <div class="fa-diag-table-wrap">
+          <table class="fa-diag-table" id="fa-diag-tags">
+            <thead id="fa-diag-thead"></thead>
+            <tbody id="fa-diag-tbody"></tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>
@@ -2349,6 +2395,7 @@ document.getElementById('json-input').addEventListener('input', ()=>{
         gridWrapEl.style.display = 'none';
         diagPanel.style.display  = 'flex';
         drawDiagram(parsedMsgs);
+        var _vs = document.getElementById('fa-diag-val-search'); if (_vs) _vs.focus();
         btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg> MSG';
       } else {
         gridWrapEl.style.display = '';
@@ -2503,12 +2550,27 @@ document.getElementById('json-input').addEventListener('input', ()=>{
   // Persistent diagram table state (survives drawDiagram re-calls)
   var DIAG_COL_STATE = [
     { tag:'7203',  label:'APP_CODE',        collapsed:false },
+    { tag:'100',   label:'EX_DEST',         collapsed:false },
     { tag:'10010', label:'DEST_ID',         collapsed:false },
+    { tag:'7201',  label:'MS_DEST',         collapsed:false },
     { tag:'10914', label:'ORDER_ID',        collapsed:false },
     { tag:'10916', label:'ORDER_VID',       collapsed:false },
     { tag:'10910', label:'PARENT_ORDER_ID', collapsed:false },
     { tag:'10909', label:'PARENT_ORDER_VID',collapsed:false },
     { tag:'150',   label:'EXEC_TYPE',       collapsed:false },
+    { tag:'20',    label:'EXEC_TRANS_TYPE', collapsed:false },
+    { tag:'39',    label:'ORD_STATuS',      collapsed:false },
+    { tag:'40',    label:'ORD_TYPE',        collapsed:false },
+    { tag:'59',    label:'TIME_IN_FORCE',   collapsed:false },
+    { tag:'60',    label:'TRANSACT_DATE',   collapsed:false },
+    { tag:'47',    label:'CAPACITY',        collapsed:false },
+    { tag:'204',   label:'CUST_FIRM',       collapsed:false },
+    { tag:'442',   label:'MULTI_LEG',       collapsed:false },
+    { tag:'549',   label:'EXT_CROSS_TYPE',  collapsed:false },
+    { tag:'17',    label:'EXEC_ID',         collapsed:false },
+    { tag:'37',    label:'ORDER-ID',        collapsed:false },
+    { tag:'54',    label:'SIDE',            collapsed:false },
+    { tag:'109',   label:'CLIENT_ID',       collapsed:false },
   ];
   var _diagOrderMap   = {};
   var _diagAll        = [];
@@ -2603,7 +2665,99 @@ document.getElementById('json-input').addEventListener('input', ()=>{
       });
       tbody.appendChild(tr);
     });
+
+    // Re-apply any active search after re-render
+    applyDiagSearch();
   }
+
+  function applyDiagSearch() {
+    var valQ = (document.getElementById('fa-diag-val-search') || {}).value || '';
+    var tagQ = (document.getElementById('fa-diag-tag-search') || {}).value || '';
+    valQ = valQ.trim().toLowerCase();
+    tagQ = tagQ.trim().toLowerCase();
+
+    var thead = document.getElementById('fa-diag-thead');
+    var tbody = document.getElementById('fa-diag-tbody');
+    if (!thead || !tbody) return;
+
+    // ── Tag search: highlight matching headers + scroll to first match ──
+    var firstMatchTh = null;
+    if (thead.rows[0]) {
+      Array.from(thead.rows[0].cells).forEach(function(th, idx) {
+        var col = DIAG_COL_STATE[idx];
+        if (!col || col.collapsed) return;
+        if (!tagQ) {
+          th.classList.remove('tag-match', 'tag-no-match');
+        } else {
+          var hit = col.label.toLowerCase().indexOf(tagQ) >= 0
+                 || col.tag.indexOf(tagQ) >= 0;
+          th.classList.toggle('tag-match',    hit);
+          th.classList.toggle('tag-no-match', !hit);
+          if (hit && !firstMatchTh) firstMatchTh = th;
+        }
+      });
+    }
+    // Scroll the table wrapper so the first matching column is visible
+    if (firstMatchTh) {
+      var wrap = document.querySelector('.fa-diag-table-wrap');
+      if (wrap) {
+        var thLeft  = firstMatchTh.offsetLeft;
+        var thRight = thLeft + firstMatchTh.offsetWidth;
+        var wLeft   = wrap.scrollLeft;
+        var wRight  = wLeft + wrap.clientWidth;
+        if (thLeft < wLeft) {
+          wrap.scrollLeft = thLeft - 16;
+        } else if (thRight > wRight) {
+          wrap.scrollLeft = thRight - wrap.clientWidth + 16;
+        }
+      }
+    }
+
+    // ── Value search: show/hide rows, highlight matching cells ────
+    Array.from(tbody.rows).forEach(function(tr) {
+      var cells = Array.from(tr.cells);
+      cells.forEach(function(td){ td.classList.remove('val-match'); });
+
+      if (!valQ) {
+        tr.classList.remove('val-hidden');
+        return;
+      }
+      var anyMatch = false;
+      cells.forEach(function(td, idx) {
+        var col = DIAG_COL_STATE[idx];
+        if (!col || col.collapsed) return;
+        var text = (td.textContent || '').toLowerCase();
+        if (text.indexOf(valQ) >= 0) {
+          td.classList.add('val-match');
+          anyMatch = true;
+        }
+      });
+      tr.classList.toggle('val-hidden', !anyMatch);
+    });
+  }
+
+  // Wire search inputs (safe to call before diagram is drawn)
+  document.addEventListener('DOMContentLoaded', function() {
+    var valInp = document.getElementById('fa-diag-val-search');
+    var tagInp = document.getElementById('fa-diag-tag-search');
+    if (valInp) {
+      valInp.addEventListener('input', applyDiagSearch);
+      // Tab from Values → Tags
+      valInp.addEventListener('keydown', function(e) {
+        if (e.key === 'Tab' && !e.shiftKey && tagInp) { e.preventDefault(); tagInp.focus(); }
+      });
+      // Click anywhere on the wrapper focuses the input
+      valInp.closest('.fa-diag-search-wrap').addEventListener('click', function(){ valInp.focus(); });
+    }
+    if (tagInp) {
+      tagInp.addEventListener('input', applyDiagSearch);
+      // Shift+Tab from Tags → Values
+      tagInp.addEventListener('keydown', function(e) {
+        if (e.key === 'Tab' && e.shiftKey && valInp) { e.preventDefault(); valInp.focus(); }
+      });
+      tagInp.closest('.fa-diag-search-wrap').addEventListener('click', function(){ tagInp.focus(); });
+    }
+  });
 
   function drawDiagram(msgs) {
     var panel = document.getElementById('fa-diagram-panel');
