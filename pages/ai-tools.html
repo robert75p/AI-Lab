@@ -724,10 +724,6 @@ body::after {
   .fa-msg-col { width:255px; min-width:255px; flex-shrink:0; border-right:1px solid rgba(255,255,255,0.04); transition:width 0.2s ease, min-width 0.2s ease; }
   .fa-msg-col.collapsed { width:38px; min-width:38px; }
   .fa-msg-col.collapsed .fa-col-body { display:none; }
-  .fa-msg-col.collapsed .fa-col-header { padding:8px 0; align-items:center; justify-content:flex-start; gap:6px; border-left-width:3px; }
-  .fa-msg-col.collapsed .fa-col-ts,
-  .fa-msg-col.collapsed .fa-col-sum { display:none; }
-  .fa-msg-col.collapsed .fa-col-badge { writing-mode:vertical-rl; transform:rotate(180deg); padding:6px 3px; font-size:8px; width:28px; justify-content:center; }
   .fa-msg-col.collapsed .fa-cell { display:none; }
   .fa-col-header {
     height:90px; padding:10px 12px 8px;
@@ -735,6 +731,15 @@ body::after {
     display:flex; flex-direction:column; justify-content:space-between;
     position:relative;
   }
+  /* header lives outside .fa-msg-col, so must be targeted directly */
+  .fa-col-header.collapsed {
+    width:38px; min-width:38px;
+    padding:8px 0; align-items:center; justify-content:flex-start; gap:6px; border-left-width:3px;
+  }
+  .fa-col-header.collapsed .fa-col-ts,
+  .fa-col-header.collapsed .fa-col-sum { display:none; }
+  .fa-col-header.collapsed .fa-col-badge { writing-mode:vertical-rl; transform:rotate(180deg); padding:6px 3px; font-size:8px; width:28px; justify-content:center; }
+  .fa-col-header.collapsed .fa-col-collapse { position:static; margin:4px auto 0; transform:rotate(180deg); }
   .fa-col-collapse {
     position:absolute; top:7px; right:7px;
     width:18px; height:18px; border-radius:4px; border:1px solid rgba(255,255,255,0.12);
@@ -744,7 +749,6 @@ body::after {
     flex-shrink:0;
   }
   .fa-col-collapse:hover { background:rgba(20,184,166,0.18); border-color:rgba(20,184,166,0.5); color:#14B8A6; }
-  .fa-msg-col.collapsed .fa-col-collapse { position:static; margin:4px auto 0; transform:rotate(180deg); }
   .fa-col-ts { font-family:'JetBrains Mono',monospace; font-size:8.5px; color:#7a9ab8; line-height:1.6; }
   .fa-col-ts em { font-style:normal; color:#a0bdd0; }
   .fa-col-badge {
