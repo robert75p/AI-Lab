@@ -102,14 +102,14 @@ body::after {
 .banner-heading {
   font-family: 'Poppins', sans-serif;
   font-weight: 800;
-  font-size: clamp(42px, 5vw, 60px);
+  font-size: clamp(40px, 10vw, 50px);
   letter-spacing: -0.03em;
-  line-height: 1.05;
+  line-height: 1.15;
   background: linear-gradient(130deg, #F1F5F9 0%, #38BDF8 55%, #14B8A6 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 
 .banner-sub {
@@ -503,7 +503,7 @@ body::after {
     <div class="fade-up" style="flex:1; max-width:520px;">
       <div class="banner-badge">
         <span class="badge-dot"></span>
-        <span style="font-family:'JetBrains Mono',monospace; font-size:11px; color:#38BDF8; letter-spacing:0.08em;">AI SYSTEMS ONLINE</span>
+        <span style="font-family:'JetBrains Monocd',monospace; font-size:11px; color:#38BDF8; letter-spacing:0.08em;">AI SYSTEMS ONLINE</span>
       </div>
 
       <h1 class="banner-heading">
@@ -540,15 +540,15 @@ body::after {
       <canvas id="globe-canvas" width="400" height="400" style="width:400px;height:400px;"></canvas>
       <div class="globe-legend">
         <div class="legend-item">
-          <div class="legend-dot" style="background:#38BDF8;"></div>
+          <div class="legend-dot" style="background:hsl(0, 0%, 100%);"></div>
           <span style="color:hsl(0, 0%, 96%);">Applications</span>
         </div>
         <div class="legend-item">
-          <div class="legend-dot" style="background:#14B8A6;"></div>
-          <span style="color:hsl(212, 81%, 74%);">Engines</span>
+          <div class="legend-dot" style="background:hsl(41, 94%, 43%);"></div>
+          <span style="color:hwb(33 32% 9%);">Engines</span>
         </div>
         <div class="legend-item">
-          <div class="legend-dot" style="background:#2563EB;"></div>
+          <div class="legend-dot" style="background:hsl(300, 86%, 49%);"></div>
           <span style="color:hsl(288, 89%, 79%);">Exchanges</span>
         </div>
       </div>
@@ -772,18 +772,18 @@ body::after {
         </div>
       </a>
 
-      <!-- Tile 6: AI Market intelligence -->
-      <a href="pages/ai-tools.html" class="tile-card">
-        <div class="tile-icon">
-          <!-- Wrench/tools icon -->
+      <!-- Tile 6: Market Intelligence -->
+      <a href="pages/market-intelligence.html" class="tile-card">
+        <div class="tile-icon" style="background:linear-gradient(135deg,rgba(37,99,235,0.22),rgba(56,189,248,0.14));border-color:rgba(37,99,235,0.25);">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
-               stroke="#14B8A6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/>
+               stroke="#38BDF8" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/>
+            <polyline points="16 7 22 7 22 13"/>
           </svg>
         </div>
-        <div class="tile-title">Market intelligence</div>
-        <div class="tile-desc">Macro sentiment, early signals, Intelligence gathering.</div>
-        <div class="tile-cta" style="color:#14B8A6;">
+        <div class="tile-title">Market Intelligence</div>
+        <div class="tile-desc">Macro sentiment, global indices, FX rates, yield curves, and AI-generated signals — your custom Launchpad.</div>
+        <div class="tile-cta" style="color:#38BDF8;">
           EXPLORE <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
         </div>
       </a>
@@ -818,18 +818,21 @@ body::after {
   const MARKERS = [
     { lat: 40.71, lng: -74.01, label: 'CARBON',    col: 'rgba(255,255,255,1)' },
     { lat: 30.71, lng: -34.01, label: 'CSOM',    col: 'rgba(255,255,255,1)' },
-    { lat: 21.51, lng: -0.13,  label: 'JUPITER',    col: 'rgba(20,184,166,1)' },
+    { lat: 21.51, lng: -0.13,  label: 'JUPITER',    col: 'rgba(255,255,255,1)' },
     { lat: 15.51, lng: -20.13,  label: 'RATESALGO',    col: 'rgba(255,255,222,1)' },
     { lat: -15.51, lng: -20.13,  label: 'CD-RAZER',    col: 'rgba(255,255,222,1)' },
-    { lat: 51.51, lng: -0.13,  label: 'XMAN',    col: 'rgba(122,255,90,1)' },
-    { lat: -51.51, lng: -0.13,  label: 'MSTX',    col: 'rgba(122,255,90,1)' },
-    { lat: 22.32, lng: 114.17, label: 'mvea',        col: 'rgba(37,99,235,1)'  },
-    { lat: 35.68, lng: 139.69, label: 'IEDALGO',     col: 'rgba(56,189,248,0.6)' },
-    { lat: 1.35,  lng: 103.82, label: 'RBE_PREBCHMK', col: 'rgba(122,255,90,0.5)' },
+    { lat: 51.51, lng: -0.13,  label: 'XMAN',    col: 'rgba(255,178,102,1)' },
+    { lat: -51.51, lng: -0.13,  label: 'MSTX',    col: 'rgba(255,178,102,1)' },
+    { lat: 22.32, lng: 114.17, label: 'mvea',        col: 'rgba(255,178,102,1)'  },
+    { lat: 35.68, lng: 139.69, label: 'IEDALGO',     col: 'rgba(255,178,102,1)' },
+    { lat: 1.35,  lng: 103.82, label: 'RBE_PREBCHMK', col: 'rgba(255,178,102,1)' },
     { lat: 38.86, lng: 12.35,   label: 'LSE',     col: 'rgba(255,160,222,0.5)' },
     { lat: 19.43, lng: -99.13, label: 'EUREX',    col: 'rgba(255,160,222,0.5)' },
     { lat: -33.87,lng: 151.21, label: 'NSDQ',    col: 'rgba(255,160,222,0.45)' },
     { lat: -23.87,lng: 111.21, label: 'LIFFP',    col: 'rgba(255,160,222,0.45)' },
+    { lat: -5.51, lng: -140.13,  label: 'KENDA',    col: 'rgba(255,255,222,1)' },
+    { lat: -0.51, lng: -10.13,  label: 'PT',    col: 'rgba(255,255,222,1)' },
+    { lat: -0.51, lng: -100.13,  label: 'VSORT',    col: 'rgba(255,178,102,1)' },
   ];
 
   const CONNS = [
@@ -841,7 +844,9 @@ body::after {
     [[51.51,-0.13],[48.86,2.35]],
     [[40.71,-74.01],[19.43,-99.13]],
     [[22.32,114.17],[1.35,103.82]],
-    [[1.35,103.82],[-33.87,151.21]],
+    [[-0.51,10.13],[-0.51,-100.13]],
+    [[-0.51,-100.13],[-23.87,111.21]],
+    [[40.71,-74.01],[-51.51,-0.13]],
   ];
 
   // Fibonacci sphere dots

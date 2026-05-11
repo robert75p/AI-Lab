@@ -31,8 +31,9 @@ const PROTECTED_PAGES  = new Set([
   '/pages/ai-robot.html',
   '/pages/ai-pattern.html',
   '/pages/jira-ai.html',
+  '/pages/market-intelligence.html',
 ]);
-const READONLY = true; // disables all write (POST) endpoints
+const READONLY = false; // set to true on the deploy server
 
 // In-memory session tokens (cleared on server restart)
 const sessions = new Set();

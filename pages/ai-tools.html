@@ -366,9 +366,23 @@ body::after {
   .fa-exclude-wrap {
     display:flex; align-items:center; gap:7px;
   }
-  .fa-exclude-label {
-    font-family:'JetBrains Mono',monospace; font-size:10px; color:#94a3b8; letter-spacing:.08em; white-space:nowrap;
+  .fa-exclude-toggle {
+    display:flex; align-items:center; border-radius:5px; overflow:hidden;
+    border:1px solid rgba(148,163,184,0.2); flex-shrink:0; cursor:pointer;
   }
+  .fa-exclude-toggle-opt {
+    font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:.07em;
+    padding:4px 9px; color:#64748b; background:transparent;
+    border:none; cursor:pointer; white-space:nowrap;
+    transition:background 0.15s, color 0.15s;
+  }
+  .fa-exclude-toggle-opt.active-exclude {
+    background:rgba(248,113,113,0.15); color:#fca5a5;
+  }
+  .fa-exclude-toggle-opt.active-show {
+    background:rgba(20,184,166,0.15); color:#5eead4;
+  }
+  .fa-exclude-toggle-sep { width:1px; background:rgba(148,163,184,0.15); align-self:stretch; }
   .fa-exclude-input {
     background:#0b1929; border:1px solid rgba(148,163,184,0.25); border-radius:5px;
     color:#cbd5e1; font-family:'JetBrains Mono',monospace; font-size:10px;
@@ -378,14 +392,20 @@ body::after {
   .fa-exclude-input:focus { border-color:rgba(20,184,166,0.55); }
   .fa-exclude-input::placeholder { color:#3d5166; }
   .fa-save-btn {
-    display:flex; align-items:center; justify-content:center;
-    width:28px; height:28px; border-radius:5px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; gap:5px;
+    height:28px; padding:0 9px; border-radius:5px; cursor:pointer;
     background:rgba(20,184,166,0.08); border:1px solid rgba(20,184,166,0.25);
-    color:#5eead4; transition:background 0.2s, border-color 0.2s, color 0.2s;
-    flex-shrink:0;
+    color:#5eead4; transition:background 0.2s, border-color 0.2s, color 0.2s, opacity 0.2s;
+    flex-shrink:0; font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:.06em;
+    white-space:nowrap;
   }
   .fa-save-btn:hover { background:rgba(20,184,166,0.22); border-color:rgba(20,184,166,0.6); color:#fff; }
-  .fa-save-btn.saved { border-color:#14B8A6; color:#14B8A6; }
+  .fa-save-btn.saved {
+    background:rgba(148,163,184,0.08); border-color:rgba(148,163,184,0.2);
+    color:#64748b; cursor:default; pointer-events:none;
+  }
+  .fa-save-label { display:none; }
+  .fa-save-btn.saved .fa-save-label { display:inline; }
   .fa-cell.xc-hl { outline:1px solid var(--xc-bd); outline-offset:-1px; background:var(--xc-bg) !important; }
   .fa-max-btn {
     width:32px; height:32px; border-radius:6px; flex-shrink:0;
@@ -395,7 +415,7 @@ body::after {
   }
   .fa-max-btn:hover { background:rgba(20,184,166,0.25); border-color:#14B8A6; }
   .fa-wrap:fullscreen { border-radius:0; }
-  .fa-wrap:fullscreen .fa-grid-wrap { height:calc(100vh - 130px); overflow-y:auto; }
+  .fa-wrap:fullscreen .fa-grid-wrap { max-height:calc(100vh - 130px); }
   .fa-status { font-family:'JetBrains Mono',monospace; font-size:10px; color:#94a3b8; margin-left:auto; }
   .fa-legend { display:flex; gap:6px; flex-wrap:wrap; padding:10px 20px; border-bottom:1px solid rgba(255,255,255,0.04); align-items:center; }
   .fa-legend-item {
@@ -527,7 +547,14 @@ body::after {
   .fa-diag-table td {
     font-size:9px; color:#94a3b8; padding:5px 10px;
     white-space:nowrap; border-right:1px solid rgba(255,255,255,0.04);
-    transition:color 0.15s;
+    transition:color 0.15s, background 0.4s;
+    cursor:copy;
+  }
+  .fa-diag-table td.col-collapsed { cursor:default; }
+  .fa-diag-table td.td-copied {
+    background:rgba(20,184,166,0.28) !important;
+    color:#fff !important;
+    transition:background 0s, color 0s;
   }
   .fa-diag-table tr.row-active td { color:#ffffff; }
   .fa-diagram-btn {
@@ -579,13 +606,17 @@ body::after {
   }
   .fa-idmatch-search::placeholder { color:#334155; }
   .fa-idmatch-save {
-    display:flex; align-items:center; justify-content:center;
-    width:20px; height:20px; border-radius:4px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; gap:4px;
+    height:20px; padding:0 7px; border-radius:4px; cursor:pointer;
     background:rgba(236,72,153,0.08); border:1px solid rgba(236,72,153,0.25);
     color:#ec4899; transition:background 0.2s, border-color 0.2s, color 0.2s; flex-shrink:0;
+    font-family:'JetBrains Mono',monospace; font-size:8px; letter-spacing:.06em; white-space:nowrap;
   }
   .fa-idmatch-save:hover { background:rgba(236,72,153,0.22); border-color:#ec4899; color:#fff; }
-  .fa-idmatch-save.saved { border-color:#ec4899; color:#f9a8d4; }
+  .fa-idmatch-save.saved {
+    background:rgba(148,163,184,0.08); border-color:rgba(148,163,184,0.2);
+    color:#64748b; cursor:default; pointer-events:none;
+  }
   .fa-idmatch-row {
     display:flex; align-items:center; gap:8px;
     padding:4px 12px; cursor:pointer;
@@ -603,7 +634,13 @@ body::after {
   .fa-idmatch-row.checked .fa-idmatch-check { background:rgba(236,72,153,0.2); border-color:#ec4899; }
   .fa-idmatch-tick { display:none; color:#ec4899; font-size:9px; line-height:1; }
   .fa-idmatch-row.checked .fa-idmatch-tick { display:block; }
-  .fa-grid-wrap { overflow-x:auto; }
+  .fa-grid-wrap { overflow:auto; max-height:calc(100vh - 220px); }
+  .fa-grid-header {
+    display:flex; min-width:max-content;
+    position:sticky; top:0; z-index:20;
+    border-bottom:1px solid rgba(255,255,255,0.07);
+    box-shadow:0 4px 16px rgba(0,0,0,0.5);
+  }
   #fa-copy-tip {
     position:fixed; z-index:10000; pointer-events:none;
     background:#14B8A6; color:#fff;
@@ -642,8 +679,9 @@ body::after {
   }
   .fa-tags-col-header {
     height:90px; display:flex; align-items:flex-end; padding:0 14px 10px;
-    border-bottom:1px solid rgba(255,255,255,0.07);
     font-family:'JetBrains Mono',monospace; font-size:9px; color:#4d7a96; letter-spacing:.1em;
+    background:#07101f; flex-shrink:0;
+    width:220px; min-width:220px;
   }
   .fa-tag-row {
     display:flex; align-items:center; gap:7px;
@@ -693,7 +731,7 @@ body::after {
   .fa-msg-col.collapsed .fa-cell { display:none; }
   .fa-col-header {
     height:90px; padding:10px 12px 8px;
-    border-bottom:1px solid rgba(255,255,255,0.07);
+    width:255px; min-width:255px; flex-shrink:0;
     display:flex; flex-direction:column; justify-content:space-between;
     position:relative;
   }
@@ -747,16 +785,21 @@ body::after {
     <div class="fa-toolbar">
       <span class="fa-toolbar-label">&#9658; FIX ANALYZER</span>
       <label class="fa-file-btn" id="fa-file-label">
-        &#128194; SELECT FILE
+        <span id="fa-file-label-text">&#128194; SELECT FILE</span>
         <input type="file" id="fa-file-input" accept=".txt,.log,.fix,.csv">
       </label>
       <button class="fa-run-btn" id="fa-run-btn" disabled>&#9654; RUN</button>
-      <button class="fa-xcheck-btn" id="fa-xcheck-btn" disabled>&#10799; X-CHECK</button>
+      <button class="fa-xcheck-btn" id="fa-xcheck-btn" disabled>&#10799; BOOKING MODEL</button>
       <div class="fa-exclude-wrap">
-        <span class="fa-exclude-label">EXCLUDE</span>
-        <input type="text" class="fa-exclude-input" id="fa-exclude-input" placeholder="e.g. 35,49,56" title="Comma-separated FIX tags to hide">
-        <button class="fa-save-btn" id="fa-exclude-save" title="Save excluded tags">
+        <div class="fa-exclude-toggle" id="fa-exclude-toggle">
+          <button class="fa-exclude-toggle-opt active-exclude" id="fa-exclude-opt-exclude" data-mode="exclude">EXCLUDE</button>
+          <div class="fa-exclude-toggle-sep"></div>
+          <button class="fa-exclude-toggle-opt" id="fa-exclude-opt-show" data-mode="show">SHOW ONLY</button>
+        </div>
+        <input type="text" class="fa-exclude-input" id="fa-exclude-input" placeholder="e.g. 35,49,56" title="Comma-separated FIX tags">
+        <button class="fa-save-btn" id="fa-exclude-save" title="Save">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          <span class="fa-save-label">Saved!</span>
         </button>
       </div>
       <span class="fa-status" id="fa-status">No file loaded</span>
@@ -784,6 +827,7 @@ body::after {
               <span class="fa-idmatch-all" id="fa-idmatch-all">all / none</span>
               <button class="fa-idmatch-save" id="fa-idmatch-save" title="Save selections">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                <span class="fa-save-label">Saved!</span>
               </button>
             </div>
           </div>
@@ -806,6 +850,7 @@ body::after {
         <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
         SELECT A FIX MESSAGE FILE AND CLICK RUN
       </div>
+      <div class="fa-grid-header" id="fa-grid-header" style="display:none"></div>
       <div class="fa-grid" id="fa-grid" style="display:none"></div>
     </div>
     <div class="fa-diagram-panel" id="fa-diagram-panel" style="display:none">
@@ -866,15 +911,6 @@ body::after {
       <button class="xianxia-maximize" onclick="toggleFullscreen()" title="Maximize â Full Experience">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3"/></svg>
       </button>
-      <div class="gesture-legend">
-        <div>OPEN PALM &rarr; DISPERSE / FAN</div>
-        <div>FIST &rarr; GATHER / ATTACK</div>
-        <div>POINT &rarr; BEAM STRIKE</div>
-        <div>V-SIGN &rarr; 90&deg; ARC</div>
-        <div>THUMB UP &rarr; BONUS!</div>
-        <div>TWO OPEN &rarr; VORTEX</div>
-        <div>HANDS CLOSE &rarr; MERGE</div>
-      </div>
     </div>
   </div>
 
@@ -1110,7 +1146,7 @@ document.getElementById('json-input').addEventListener('input', ()=>{
     fetch('/data/xianxia_flat.json')
       .then(function(r) { return r.json(); })
       .then(function(data) {
-        allNodes = data;
+        allNodes = data.slice(0, Math.ceil(data.length / 2));
         setStatus('⟳ LOADING THREE.JS...');
         var s3 = document.createElement('script');
         s3.src = '/vendor/three.min.js';
@@ -1762,25 +1798,25 @@ document.getElementById('json-input').addEventListener('input', ()=>{
   var EXEC_THEME_ORDER = ['A','0','1','2','3','4','5','6','7','8','9','B','C','D','E'];
 
   var EXEC_THEME = {
-    'A': { label:'Pending New',   color:'#38bdf8', bg:'rgba(56,189,248,0.07)'  },
-    '0': { label:'New',           color:'#60a5fa', bg:'rgba(96,165,250,0.07)'  },
-    '1': { label:'Partial Fill',  color:'#4ade80', bg:'rgba(74,222,128,0.07)'  },
-    '2': { label:'Fill',          color:'#22c55e', bg:'rgba(34,197,94,0.09)'   },
-    '3': { label:'Done for Day',  color:'#fb923c', bg:'rgba(251,146,60,0.07)'  },
-    '4': { label:'Canceled',      color:'#f87171', bg:'rgba(248,113,113,0.07)' },
-    '5': { label:'Replace',       color:'#a78bfa', bg:'rgba(167,139,250,0.07)' },
-    '6': { label:'Pending Cancel',color:'#fb923c', bg:'rgba(251,146,60,0.07)'  },
-    '7': { label:'Stopped',       color:'#94a3b8', bg:'rgba(148,163,184,0.06)' },
-    '8': { label:'Rejected',      color:'#ef4444', bg:'rgba(239,68,68,0.09)'   },
-    '9': { label:'Suspended',     color:'#94a3b8', bg:'rgba(148,163,184,0.06)' },
-    'B': { label:'Calculated',    color:'#94a3b8', bg:'rgba(148,163,184,0.06)' },
-    'C': { label:'Expired',       color:'#fb7185', bg:'rgba(251,113,133,0.07)' },
-    'D': { label:'Restated',      color:'#fbbf24', bg:'rgba(251,191,36,0.09)'  },
-    'E': { label:'Trade(clear)',  color:'#34d399', bg:'rgba(52,211,153,0.07)'  },
-    'F': { label:'Trade',         color:'#34d399', bg:'rgba(52,211,153,0.09)'  },
-    'G': { label:'Trade Correct', color:'#6ee7b7', bg:'rgba(110,231,183,0.07)' },
-    'H': { label:'Trade Cancel',  color:'#f87171', bg:'rgba(248,113,113,0.09)' },
-    'I': { label:'Order Status',  color:'#94a3b8', bg:'rgba(148,163,184,0.06)' }
+    'A': { label:'Pending New',   color:'#06b6d4', bg:'rgba(6,182,212,0.14)'   },
+    '0': { label:'New',           color:'#60a5fa', bg:'rgba(96,165,250,0.14)'  },
+    '1': { label:'Partial Fill',  color:'#4ade80', bg:'rgba(74,222,128,0.13)'  },
+    '2': { label:'Fill',          color:'#22c55e', bg:'rgba(34,197,94,0.16)'   },
+    '3': { label:'Done for Day',  color:'#fb923c', bg:'rgba(251,146,60,0.14)'  },
+    '4': { label:'Canceled',      color:'#f87171', bg:'rgba(248,113,113,0.14)' },
+    '5': { label:'Replace',       color:'#a78bfa', bg:'rgba(167,139,250,0.14)' },
+    '6': { label:'Pending Cancel',color:'#fb923c', bg:'rgba(251,146,60,0.14)'  },
+    '7': { label:'Stopped',       color:'#94a3b8', bg:'rgba(148,163,184,0.11)' },
+    '8': { label:'Rejected',      color:'#ef4444', bg:'rgba(239,68,68,0.16)'   },
+    '9': { label:'Suspended',     color:'#94a3b8', bg:'rgba(148,163,184,0.11)' },
+    'B': { label:'Calculated',    color:'#94a3b8', bg:'rgba(148,163,184,0.11)' },
+    'C': { label:'Expired',       color:'#fb7185', bg:'rgba(251,113,133,0.14)' },
+    'D': { label:'Restated',      color:'#fbbf24', bg:'rgba(251,191,36,0.15)'  },
+    'E': { label:'Trade(clear)',  color:'#34d399', bg:'rgba(52,211,153,0.14)'  },
+    'F': { label:'Trade',         color:'#34d399', bg:'rgba(52,211,153,0.16)'  },
+    'G': { label:'Trade Correct', color:'#6ee7b7', bg:'rgba(110,231,183,0.13)' },
+    'H': { label:'Trade Cancel',  color:'#f87171', bg:'rgba(248,113,113,0.16)' },
+    'I': { label:'Order Status',  color:'#94a3b8', bg:'rgba(148,163,184,0.11)' }
   };
 
   // Highlight palette for shared ID values (distinct per unique value)
@@ -1922,20 +1958,28 @@ document.getElementById('json-input').addEventListener('input', ()=>{
     return colorMap;
   }
 
-  function getExcludedTags() {
+  var excludeMode = 'exclude'; // 'exclude' | 'show'
+  var excludeTagsStr  = '';
+  var showOnlyTagsStr = '';
+
+  function getFilterTags() {
     var raw = (document.getElementById('fa-exclude-input') || {}).value || '';
-    var excluded = {};
-    raw.split(',').forEach(function(t) {
-      var n = t.trim();
-      if (n) excluded[n] = true;
-    });
-    return excluded;
+    var tags = {};
+    raw.split(',').forEach(function(t) { var n = t.trim(); if (n) tags[n] = true; });
+    return tags;
   }
 
   function collectAllTags(msgs) {
     var seen = {};
-    var excluded = getExcludedTags();
-    msgs.forEach(function(m){ Object.keys(m).forEach(function(t){ if (!excluded[t]) seen[t] = true; }); });
+    var filterTags = getFilterTags();
+    var hasFilter = Object.keys(filterTags).length > 0;
+    msgs.forEach(function(m) {
+      Object.keys(m).forEach(function(t) {
+        if (!hasFilter) { seen[t] = true; return; }
+        if (excludeMode === 'exclude' && !filterTags[t]) seen[t] = true;
+        if (excludeMode === 'show'    &&  filterTags[t]) seen[t] = true;
+      });
+    });
     // Sort: numeric tags numerically, then by number
     return Object.keys(seen).sort(function(a, b){ return parseInt(a,10) - parseInt(b,10); });
   }
@@ -2117,7 +2161,7 @@ document.getElementById('json-input').addEventListener('input', ()=>{
     }).then(function(r) {
       if (r.ok && saveBtn) {
         saveBtn.classList.add('saved');
-        setTimeout(function(){ saveBtn.classList.remove('saved'); }, 1500);
+        setTimeout(function(){ saveBtn.classList.remove('saved'); }, 2000);
       }
     }).catch(function(){});
   }
@@ -2146,21 +2190,26 @@ document.getElementById('json-input').addEventListener('input', ()=>{
     sorted.forEach(function(m){ Object.keys(m).forEach(function(t){ if (_fullMap[m[t]] !== undefined) _tagSet[t] = true; }); });
     fullMatchTags = Object.keys(_tagSet).sort(function(a,b){ return parseInt(a)-parseInt(b); });
     var grid = document.getElementById('fa-grid');
+    var gridHeader = document.getElementById('fa-grid-header');
     var placeholder = document.getElementById('fa-placeholder');
     grid.innerHTML = '';
+    gridHeader.innerHTML = '';
     placeholder.style.display = 'none';
     grid.style.display = 'flex';
+    gridHeader.style.display = 'flex';
     document.getElementById('fa-legend').style.display = 'flex';
     buildLegend(parsedMsgs);
     buildIdMatchPanel();
 
-    // ── Left column ──
+    // ── Left column header (goes into sticky header row) ──
+    var leftHdr = document.createElement('div');
+    leftHdr.className = 'fa-tags-col-header';
+    leftHdr.textContent = 'TAG · NAME';
+    gridHeader.appendChild(leftHdr);
+
+    // ── Left column body ──
     var leftCol = document.createElement('div');
     leftCol.className = 'fa-tags-col';
-    var hdr = document.createElement('div');
-    hdr.className = 'fa-tags-col-header';
-    hdr.textContent = 'TAG · NAME';
-    leftCol.appendChild(hdr);
     allTags.forEach(function(t) {
       var row = document.createElement('div');
       row.className = 'fa-tag-row' + (KEY_TAGS[t] ? ' key-tag' : '') + (t === '150' ? ' tag-150-row' : '');
@@ -2206,39 +2255,44 @@ document.getElementById('json-input').addEventListener('input', ()=>{
       var theme = EXEC_THEME[et] || { label: et || '?', color:'#475569', bg:'rgba(255,255,255,0.03)' };
       var col = document.createElement('div');
       col.className = 'fa-msg-col';
-      col.style.background = theme.bg;
+      col.style.background  = theme.bg;
+      col.style.borderRight = '1px solid ' + theme.color + '22';
 
-      // Header
+      // Header -> appended to sticky gridHeader row
       var hd = document.createElement('div');
       hd.className = 'fa-col-header';
-      hd.style.borderLeft = '2px solid ' + theme.color;
+      hd.style.background  = theme.bg;
+      hd.style.borderTop   = '3px solid ' + theme.color;
+      hd.style.borderLeft  = '2px solid ' + theme.color;
+      hd.style.borderRight = '1px solid ' + theme.color + '22';
       // Timestamp info
       var ts = document.createElement('div'); ts.className = 'fa-col-ts';
       var t60 = msg['60'] || ''; var t52 = msg['52'] || '';
-      ts.innerHTML = '<em>T60:</em> ' + (t60 ? t60.replace('T',' ') : '\u2014') + '<br><em>T52:</em> ' + (t52 ? t52.replace('T',' ') : '\u2014');
+      ts.innerHTML = '<em>T60:</em> ' + (t60 ? t60.replace('T',' ') : '—') + '<br><em>T52:</em> ' + (t52 ? t52.replace('T',' ') : '—');
       // Badge
       var badge = document.createElement('div'); badge.className = 'fa-col-badge';
       badge.style.background = theme.bg; badge.style.color = theme.color;
       badge.style.border = '1px solid ' + theme.color + '55';
-      badge.innerHTML = '<span style="font-size:11px">\u25cf</span> ' + et + ' \u00b7 ' + theme.label;
+      badge.innerHTML = '<span style="font-size:11px">●</span> ' + et + ' · ' + theme.label;
       // Summary
       var sum = document.createElement('div'); sum.className = 'fa-col-sum';
       var sym = msg['55'] || msg['48'] || ''; var side = msg['54'] || ''; var qty = msg['38'] || '';
       var px = msg['44'] || ''; var ord = msg['37'] ? shortenVal(msg['37'], 14) : '';
-      sum.textContent = [sym, side==='1'?'BUY':side==='2'?'SELL':side, qty&&'Q:'+qty, px&&'P:'+px, ord&&'#'+ord].filter(Boolean).join(' \u00b7 ');
+      sum.textContent = [sym, side==='1'?'BUY':side==='2'?'SELL':side, qty&&'Q:'+qty, px&&'P:'+px, ord&&'#'+ord].filter(Boolean).join(' · ');
       sum.title = sum.textContent;
-      // Collapse button
+      // Collapse button -- syncs header cell and body column
       var collapseBtn = document.createElement('button');
       collapseBtn.className = 'fa-col-collapse';
       collapseBtn.title = 'Collapse column';
       collapseBtn.innerHTML = '<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>';
       collapseBtn.addEventListener('click', function() {
         var isCollapsed = col.classList.toggle('collapsed');
+        hd.classList.toggle('collapsed', isCollapsed);
         collapseBtn.title = isCollapsed ? 'Expand column' : 'Collapse column';
       });
       hd.appendChild(collapseBtn);
       hd.appendChild(ts); hd.appendChild(badge); hd.appendChild(sum);
-      col.appendChild(hd);
+      gridHeader.appendChild(hd);
 
       // Cells
       allTags.forEach(function(t) {
@@ -2295,7 +2349,7 @@ document.getElementById('json-input').addEventListener('input', ()=>{
         c.style.removeProperty('--xc-bd');
       });
       xcBtn.classList.remove('active');
-      xcBtn.textContent = '\u2717 X-CHECK';
+      xcBtn.textContent = '\u2717 Booking Model';
       statusEl.textContent = statusEl.getAttribute('data-base') || '';
       return;
     }
@@ -2327,7 +2381,7 @@ document.getElementById('json-input').addEventListener('input', ()=>{
     });
 
     xcBtn.classList.add('active');
-    xcBtn.textContent = '\u2717 X-CHECK';
+    xcBtn.textContent = '\u2717 Booking Model';
     var base = document.getElementById('fa-status').getAttribute('data-base') || document.getElementById('fa-status').textContent;
     statusEl.setAttribute('data-base', base);
     statusEl.textContent = base + ' \u00b7 ' + matches.length + ' common IDs \u00b7 click any highlight to hide';
@@ -2356,13 +2410,9 @@ document.getElementById('json-input').addEventListener('input', ()=>{
     var statusEl = document.getElementById('fa-status');
 
     fileInput.addEventListener('change', function() {
-      var file = fileInput.files[0];
+      var file = this.files[0];
       if (!file) return;
-      document.getElementById('fa-file-label').innerHTML =
-        '&#128194; ' + file.name +
-        '<input type="file" id="fa-file-input" accept=".txt,.log,.fix,.csv">';
-      // Re-attach after innerHTML replacement
-      document.getElementById('fa-file-input').addEventListener('change', arguments.callee);
+      document.getElementById('fa-file-label-text').textContent = '📂 ' + file.name;
       var reader = new FileReader();
       reader.onload = function(e) {
         rawText = e.target.result;
@@ -2491,6 +2541,27 @@ document.getElementById('json-input').addEventListener('input', ()=>{
       }).catch(function(){});
     });
 
+    // Exclude / Show-only toggle
+    document.getElementById('fa-exclude-toggle').addEventListener('click', function(e) {
+      var btn = e.target.closest('.fa-exclude-toggle-opt');
+      if (!btn) return;
+      var mode = btn.getAttribute('data-mode');
+      if (mode === excludeMode) return;
+      // Save current input into the outgoing mode's variable
+      var inp = document.getElementById('fa-exclude-input');
+      if (excludeMode === 'exclude') excludeTagsStr  = inp.value;
+      else                           showOnlyTagsStr = inp.value;
+      excludeMode = mode;
+      // Restore the incoming mode's tags
+      inp.value = (mode === 'show') ? showOnlyTagsStr : excludeTagsStr;
+      document.getElementById('fa-exclude-opt-exclude').className =
+        'fa-exclude-toggle-opt' + (mode === 'exclude' ? ' active-exclude' : '');
+      document.getElementById('fa-exclude-opt-show').className =
+        'fa-exclude-toggle-opt' + (mode === 'show' ? ' active-show' : '');
+      if (parsedMsgs.length > 0)
+        fieldsLoaded.then(function(){ render(parsedMsgs); }).catch(function(){ render(parsedMsgs); });
+    });
+
     document.getElementById('fa-exclude-input').addEventListener('keydown', function(e) {
       if (e.key === 'Enter' && parsedMsgs.length > 0) {
         fieldsLoaded.then(function(){ render(parsedMsgs); }).catch(function(){ render(parsedMsgs); });
@@ -2498,29 +2569,43 @@ document.getElementById('json-input').addEventListener('input', ()=>{
     });
 
     document.getElementById('fa-exclude-save').addEventListener('click', function() {
-      var val = document.getElementById('fa-exclude-input').value.trim();
+      var val  = document.getElementById('fa-exclude-input').value.trim();
       var tags = val ? val.split(',').map(function(t){ return t.trim(); }).filter(Boolean) : [];
-      var btn = document.getElementById('fa-exclude-save');
-      fetch('/config/fix-exclude.json', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ excludedTags: tags })
-      }).then(function(r) {
-        if (r.ok) {
-          btn.classList.add('saved');
-          setTimeout(function(){ btn.classList.remove('saved'); }, 1500);
-        }
-      }).catch(function(){});
+      var btn  = document.getElementById('fa-exclude-save');
+      // Keep in-memory variable in sync
+      if (excludeMode === 'show') showOnlyTagsStr = val;
+      else                        excludeTagsStr  = val;
+      var file = excludeMode === 'show' ? '/config/fix-showonly.json' : '/config/fix-exclude.json';
+      var body = excludeMode === 'show'
+        ? JSON.stringify({ tags: tags, mode: 'show' })
+        : JSON.stringify({ excludedTags: tags, mode: 'exclude' });
+      fetch(file, { method:'POST', headers:{'Content-Type':'application/json'}, body: body })
+        .then(function(r) {
+          if (r.ok) {
+            btn.classList.add('saved');
+            setTimeout(function(){ btn.classList.remove('saved'); }, 2000);
+          }
+        }).catch(function(){});
     });
 
     // Auto-load configs
-    fetch('/config/fix-exclude.json').then(function(r){
-      if (r.ok) return r.json();
-    }).then(function(cfg) {
-      if (cfg && Array.isArray(cfg.excludedTags) && cfg.excludedTags.length > 0) {
-        document.getElementById('fa-exclude-input').value = cfg.excludedTags.join(', ');
-      }
-    }).catch(function(){});
+    Promise.all([
+      fetch('/config/fix-exclude.json').then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
+      fetch('/config/fix-showonly.json').then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; })
+    ]).then(function(cfgs) {
+      var excCfg  = cfgs[0];
+      var showCfg = cfgs[1];
+      // Populate both in-memory lists independently
+      if (excCfg  && Array.isArray(excCfg.excludedTags)  && excCfg.excludedTags.length  > 0)
+        excludeTagsStr  = excCfg.excludedTags.join(', ');
+      if (showCfg && Array.isArray(showCfg.tags)          && showCfg.tags.length          > 0)
+        showOnlyTagsStr = showCfg.tags.join(', ');
+      // Default to exclude mode on load; toggle button state stays as-is
+      excludeMode = 'exclude';
+      document.getElementById('fa-exclude-opt-exclude').className = 'fa-exclude-toggle-opt active-exclude';
+      document.getElementById('fa-exclude-opt-show').className    = 'fa-exclude-toggle-opt';
+      document.getElementById('fa-exclude-input').value = excludeTagsStr;
+    });
 
     fetch('/config/fix-idmatch.json').then(function(r){
       if (r.ok) return r.json();
@@ -2656,7 +2741,24 @@ document.getElementById('json-input').addEventListener('input', ()=>{
         if (col.collapsed) {
           td.className = 'col-collapsed';
         } else {
-          td.textContent = (m && m[col.tag]) ? m[col.tag] : '—';
+          var val = (m && m[col.tag]) ? m[col.tag] : '—';
+          td.textContent = val;
+          if (val !== '—') {
+            td.addEventListener('click', function(e) {
+              navigator.clipboard.writeText(val).then(function() {
+                td.classList.add('td-copied');
+                setTimeout(function() { td.classList.remove('td-copied'); }, 600);
+                var tip = document.getElementById('fa-copy-tip');
+                if (tip) {
+                  tip.style.left = (e.clientX - 20) + 'px';
+                  tip.style.top  = (e.clientY - 32) + 'px';
+                  tip.classList.add('show');
+                  clearTimeout(tip._diagTimer);
+                  tip._diagTimer = setTimeout(function() { tip.classList.remove('show'); }, 900);
+                }
+              });
+            });
+          }
         }
         tr.appendChild(td);
       });
@@ -2789,7 +2891,8 @@ document.getElementById('json-input').addEventListener('input', ()=>{
       var m = orderMap[oid];
       nodes[oid] = {
         id: oid, appCode: m['7203'] || '?', destId: m['10010'] || '?',
-        parentId: m['10910'] || null, children: [], x:0, y:0, color:'#1a2744'
+        parentId: m['10910'] || null, children: [], x:0, y:0, color:'#1a2744',
+        execType: m['150'] || ''
       };
     });
 
@@ -2801,10 +2904,11 @@ document.getElementById('json-input').addEventListener('input', ()=>{
       else { roots.push(n); }
     });
 
-    // Step 4: Assign colors depth-first
-    var ci = 0;
-    function assignColor(n) { n.color = DIAG_COLORS[ci++ % DIAG_COLORS.length]; n.children.forEach(assignColor); }
-    roots.forEach(assignColor);
+    // Step 4: Color by execType — nodes with no matching execType get a neutral slate
+    Object.values(nodes).forEach(function(n) {
+      var theme = EXEC_THEME[n.execType];
+      n.color = theme ? theme.color : '#64748b';
+    });
 
     // Step 5: Leaf-count tree layout
     var COL_W = 170, ROW_H = 110, MX = 80, MY = 80;

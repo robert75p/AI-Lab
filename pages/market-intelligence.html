@@ -1,0 +1,1024 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Market Intelligence — TRABA AI Labs</title>
+<link rel="stylesheet" href="/vendor/fonts.css">
+<link rel="stylesheet" href="/vendor/leaflet.css"/>
+<script src="/vendor/leaflet.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#060c18;--panel:#0a1220;--panel2:#0d1628;
+  --border:rgba(37,99,235,0.12);--border2:rgba(255,255,255,0.05);
+  --teal:#14B8A6;--blue:#2563EB;--sky:#38BDF8;
+  --pos:#22c55e;--neg:#ef4444;
+  --text:#F1F5F9;--muted:#64748b;--muted2:#475569;
+  --mono:'JetBrains Mono',monospace;
+}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;
+  height:100vh;overflow:hidden;display:flex;flex-direction:column;}
+
+/* ── Header ── */
+.mi-header{height:48px;background:var(--panel2);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 16px;gap:16px;flex-shrink:0;z-index:100;}
+.mi-logo{display:flex;align-items:center;gap:8px;text-decoration:none;color:inherit;flex-shrink:0;}
+.mi-logo-icon{width:28px;height:28px;border-radius:7px;
+  background:linear-gradient(135deg,#14B8A6,#0891b2);
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 2px 8px rgba(20,184,166,0.3);}
+.mi-logo-text{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.1em;}
+.mi-title{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.12em;
+  color:var(--teal);border-left:1px solid var(--border2);padding-left:16px;}
+.mi-spacer{flex:1;}
+.mi-status{display:flex;align-items:center;gap:10px;}
+.mi-badge{display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:9px;
+  letter-spacing:.08em;padding:3px 8px;border-radius:4px;}
+.mi-badge.open{background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.25);color:#86efac;}
+.mi-badge.closed{background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);color:#fca5a5;}
+.mi-badge.mixed{background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.2);color:#fde68a;}
+.mi-dot{width:5px;height:5px;border-radius:50%;animation:pulse 2s ease-in-out infinite;}
+.mi-clock{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.04em;}
+.mi-back{display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:9px;
+  letter-spacing:.08em;color:var(--muted);text-decoration:none;padding:4px 8px;border-radius:4px;
+  border:1px solid var(--border2);transition:color .15s,border-color .15s;}
+.mi-back:hover{color:var(--text);border-color:rgba(37,99,235,0.4);}
+
+/* ── Ticker ── */
+.mi-ticker{height:26px;background:#050a14;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;overflow:hidden;flex-shrink:0;}
+.mi-ticker-lbl{font-family:var(--mono);font-size:8px;font-weight:700;letter-spacing:.1em;
+  color:var(--teal);padding:0 10px;border-right:1px solid var(--border2);
+  height:100%;display:flex;align-items:center;background:rgba(20,184,166,0.06);flex-shrink:0;}
+.mi-ticker-wrap{flex:1;overflow:hidden;position:relative;}
+.mi-ticker-track{display:flex;align-items:center;animation:ticker 60s linear infinite;white-space:nowrap;}
+.mi-ticker-item{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);
+  font-size:9px;padding:0 14px;border-right:1px solid var(--border2);}
+.mi-ticker-item .sym{font-weight:700;color:#94a3b8;}
+.mi-ticker-item .chg.pos{color:var(--pos);}
+.mi-ticker-item .chg.neg{color:var(--neg);}
+
+/* ── Tabs ── */
+.mi-tabs{height:36px;background:var(--panel2);border-bottom:1px solid var(--border);
+  display:flex;align-items:flex-end;padding:0 16px;gap:2px;flex-shrink:0;}
+.mi-tab{font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.1em;
+  padding:6px 14px 8px;color:var(--muted);border:1px solid transparent;
+  border-bottom:none;border-radius:5px 5px 0 0;cursor:pointer;
+  transition:color .15s,background .15s;background:transparent;position:relative;bottom:-1px;}
+.mi-tab:hover{color:var(--text);background:rgba(255,255,255,0.03);}
+.mi-tab.active{color:var(--teal);background:var(--bg);border-color:var(--border);border-bottom-color:var(--bg);}
+
+/* ── Content ── */
+.mi-content{flex:1;overflow:auto;padding:12px 16px;background:var(--bg);}
+.mi-pane{display:none;}.mi-pane.active{display:block;}
+
+/* ── Layout grids ── */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px;}
+.g6040{display:grid;grid-template-columns:60fr 40fr;gap:10px;margin-bottom:10px;}
+.g7030{display:grid;grid-template-columns:70fr 30fr;gap:10px;margin-bottom:10px;}
+.vcol{display:flex;flex-direction:column;gap:10px;}
+
+/* ── Panel widget ── */
+.mi-panel{background:var(--panel);border:1px solid var(--border);border-radius:6px;overflow:hidden;}
+.mi-ph{display:flex;align-items:center;justify-content:space-between;
+  padding:7px 10px;border-bottom:1px solid var(--border2);background:var(--panel2);}
+.mi-pt{font-family:var(--mono);font-size:8px;font-weight:700;letter-spacing:.12em;
+  color:var(--muted);text-transform:uppercase;}
+.mi-pm{font-family:var(--mono);font-size:8px;color:var(--muted2);}
+
+/* ── Data table ── */
+.mi-tbl{width:100%;border-collapse:collapse;}
+.mi-tbl th{font-family:var(--mono);font-size:8px;font-weight:700;letter-spacing:.08em;
+  color:var(--muted2);padding:5px 8px;border-bottom:1px solid var(--border2);
+  white-space:nowrap;text-align:left;}
+.mi-tbl th.r{text-align:right;}
+.mi-tbl td{font-family:var(--mono);font-size:10px;padding:5px 8px;white-space:nowrap;
+  border-bottom:1px solid rgba(255,255,255,0.02);color:var(--text);}
+.mi-tbl td.r{text-align:right;}
+.mi-tbl td.mu{color:var(--muted);}
+.mi-tbl tbody tr:hover{background:rgba(255,255,255,0.025);}
+.mi-tbl td.pos{color:var(--pos);}
+.mi-tbl td.neg{color:var(--neg);}
+.sym{font-weight:700;color:#e2e8f0;}
+.badge{display:inline-flex;align-items:center;gap:2px;font-size:9px;
+  font-family:var(--mono);padding:1px 5px;border-radius:3px;}
+.badge.pos{background:rgba(34,197,94,0.1);color:var(--pos);}
+.badge.neg{background:rgba(239,68,68,0.08);color:var(--neg);}
+.badge.neu{background:rgba(148,163,184,0.1);color:#94a3b8;}
+.badge.warn{background:rgba(251,191,36,0.1);color:#fde68a;}
+
+/* ── Heatmap ── */
+.hm-outer{display:flex;flex-direction:row;height:262px;overflow:hidden;}
+.hm-map-col{width:50%;flex-shrink:0;border-right:1px solid rgba(255,255,255,0.07);position:relative;overflow:hidden;}
+.hm-map-lbl{font-family:var(--mono);font-size:7px;font-weight:700;letter-spacing:.1em;
+  color:var(--muted2);text-transform:uppercase;padding:5px 8px 2px;}
+#hormuz-map{height:244px;width:100%;}
+.leaflet-container{background:#030d1c!important;}
+.leaflet-control-attribution{background:rgba(6,12,24,0.82)!important;color:rgba(100,116,139,0.65)!important;
+  font-family:var(--mono)!important;font-size:6.5px!important;padding:1px 5px!important;border-radius:3px 0 0 0!important;}
+.leaflet-control-attribution a{color:rgba(100,116,139,0.65)!important;}
+.hm-vessel-tip{background:rgba(6,12,24,0.95)!important;border:1px solid rgba(255,255,255,0.12)!important;
+  border-radius:4px!important;padding:3px 8px!important;font-family:var(--mono)!important;
+  font-size:9px!important;color:#e2e8f0!important;white-space:nowrap!important;box-shadow:none!important;}
+.hm-vessel-tip::before{display:none!important;}
+.hm-wrap{flex:1;min-width:0;overflow:hidden;}
+.hm-sector{display:flex;flex-direction:column;gap:2px;min-width:0;}
+.hm-sector-lbl{font-family:var(--mono);font-size:7px;font-weight:700;letter-spacing:.1em;
+  color:var(--muted2);text-transform:uppercase;margin-bottom:2px;white-space:nowrap;overflow:hidden;}
+.hm-tiles{display:flex;flex-wrap:wrap;gap:2px;align-content:flex-start;flex:1;}
+.hm-tile{display:flex;flex-direction:column;align-items:center;justify-content:center;
+  border-radius:3px;cursor:default;overflow:hidden;transition:filter .15s;}
+.hm-tile:hover{filter:brightness(1.18);}
+.hm-sym{font-family:var(--mono);font-size:9px;font-weight:700;color:rgba(255,255,255,0.95);
+  line-height:1.2;white-space:nowrap;}
+.hm-chg{font-family:var(--mono);font-size:8px;color:rgba(255,255,255,0.75);line-height:1.2;}
+.hm-legend{display:flex;align-items:center;gap:6px;padding:0 8px 7px;justify-content:flex-end;}
+.hm-legend-item{display:flex;align-items:center;gap:3px;font-family:var(--mono);font-size:8px;color:var(--muted);}
+.hm-legend-swatch{width:10px;height:10px;border-radius:2px;}
+
+/* ── News ── */
+.mi-news{padding:8px 10px;border-bottom:1px solid var(--border2);cursor:pointer;transition:background .15s;}
+.mi-news:hover{background:rgba(255,255,255,0.025);}
+.mi-news:last-child{border-bottom:none;}
+.mi-news-hd{display:flex;align-items:center;gap:6px;margin-bottom:3px;}
+.mi-ntag{font-family:var(--mono);font-size:7px;font-weight:700;letter-spacing:.08em;padding:1px 5px;border-radius:3px;}
+.mi-ntag.mac{background:rgba(37,99,235,0.15);color:#93c5fd;}
+.mi-ntag.eq {background:rgba(20,184,166,0.12);color:#5eead4;}
+.mi-ntag.fi {background:rgba(251,191,36,0.12);color:#fde68a;}
+.mi-ntag.fx {background:rgba(167,139,250,0.12);color:#c4b5fd;}
+.mi-ntag.en {background:rgba(249,115,22,0.12);color:#fdba74;}
+.mi-ntag.ai {background:rgba(236,72,153,0.12);color:#f9a8d4;}
+.mi-ntime{font-family:var(--mono);font-size:8px;color:var(--muted2);margin-left:auto;}
+.mi-nhl{font-size:11px;color:#cbd5e1;line-height:1.4;}
+.mi-nsrc{font-family:var(--mono);font-size:8px;color:var(--muted2);margin-top:2px;}
+
+/* ── Sector heatmap ── */
+.sector-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:8px;}
+.sector-cell{padding:6px 8px;border-radius:4px;text-align:center;}
+.sector-cell .sn{font-family:var(--mono);font-size:8px;color:rgba(255,255,255,0.7);margin-bottom:2px;}
+.sector-cell .sv{font-family:var(--mono);font-size:10px;font-weight:700;}
+
+/* ── Macro item ── */
+.mac-item{display:flex;align-items:center;justify-content:space-between;
+  padding:6px 10px;border-bottom:1px solid var(--border2);}
+.mac-item:last-child{border-bottom:none;}
+.mac-name{font-size:10px;color:#94a3b8;}
+.mac-r{display:flex;align-items:center;gap:8px;}
+.mac-val{font-family:var(--mono);font-size:10px;font-weight:700;}
+.mac-prev{font-family:var(--mono);font-size:9px;color:var(--muted);}
+
+/* ── Calendar ── */
+.cal-item{display:flex;align-items:center;gap:10px;padding:6px 10px;border-bottom:1px solid var(--border2);}
+.cal-date{font-family:var(--mono);font-size:9px;color:var(--muted);width:64px;flex-shrink:0;}
+.cal-ev{font-size:10px;color:#cbd5e1;flex:1;}
+.cal-imp{font-family:var(--mono);font-size:8px;font-weight:700;padding:1px 6px;border-radius:3px;letter-spacing:.05em;}
+.cal-imp.hi{background:rgba(239,68,68,0.12);color:#f87171;}
+.cal-imp.me{background:rgba(251,191,36,0.1);color:#fde68a;}
+.cal-imp.lo{background:rgba(148,163,184,0.08);color:#94a3b8;}
+
+/* ── Signal ── */
+.sig-item{padding:8px 10px;border-bottom:1px solid var(--border2);display:flex;gap:10px;}
+.sig-dir{width:22px;height:22px;border-radius:4px;display:flex;align-items:center;
+  justify-content:center;flex-shrink:0;font-size:11px;font-weight:700;}
+.sig-dir.bull{background:rgba(34,197,94,0.12);color:var(--pos);}
+.sig-dir.bear{background:rgba(239,68,68,0.1);color:var(--neg);}
+.sig-dir.neut{background:rgba(148,163,184,0.1);color:var(--muted);}
+.sig-ticker{font-family:var(--mono);font-size:10px;font-weight:700;}
+.sig-txt{font-size:10px;color:#94a3b8;line-height:1.4;margin-top:2px;}
+.sig-meta{font-family:var(--mono);font-size:8px;color:var(--muted2);margin-top:3px;}
+
+/* ── Sentiment ── */
+.sent-wrap{padding:14px 12px;}
+.sent-lbl{font-family:var(--mono);font-size:9px;letter-spacing:.08em;color:var(--muted);margin-bottom:5px;}
+.sent-track{height:8px;background:rgba(255,255,255,0.06);border-radius:4px;margin-bottom:4px;overflow:hidden;}
+.sent-bar{height:100%;border-radius:4px;}
+.sent-val{font-family:var(--mono);font-size:10px;font-weight:700;margin-bottom:10px;}
+.sent-div{height:1px;background:var(--border2);margin:8px 0;}
+
+/* ── Yield chart ── */
+.yield-bars{display:flex;align-items:flex-end;gap:6px;height:72px;padding:8px 10px 0;}
+.ybar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;}
+.ybar{width:100%;border-radius:2px 2px 0 0;}
+.ylbl{font-family:var(--mono);font-size:7px;color:var(--muted);}
+.yval{font-family:var(--mono);font-size:7px;color:var(--teal);}
+
+/* ── Bottom bar ── */
+.mi-foot{height:24px;background:#050a14;border-top:1px solid var(--border);
+  display:flex;align-items:center;padding:0 12px;gap:16px;flex-shrink:0;}
+.mi-foot-item{font-family:var(--mono);font-size:8px;color:var(--muted2);display:flex;align-items:center;gap:4px;}
+.mi-foot-live{display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:8px;color:var(--teal);margin-left:auto;}
+
+/* ── Animations ── */
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.5;transform:scale(1.3);}}
+@keyframes ticker{from{transform:translateX(0);}to{transform:translateX(-50%);}}
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:2px;}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="mi-header">
+  <a href="/" class="mi-logo">
+    <div class="mi-logo-icon">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg>
+    </div>
+    <div class="mi-logo-text">TRABA AI LABS</div>
+  </a>
+  <div class="mi-title">MARKET INTELLIGENCE</div>
+  <div class="mi-spacer"></div>
+  <div class="mi-status">
+    <div class="mi-badge open" id="badge-us"><div class="mi-dot" style="background:#22c55e;"></div>US OPEN</div>
+    <div class="mi-badge closed" id="badge-eu"><div class="mi-dot" style="background:#ef4444;animation-delay:.3s;"></div>EU CLOSED</div>
+    <div class="mi-badge closed" id="badge-asia"><div class="mi-dot" style="background:#ef4444;animation-delay:.6s;"></div>ASIA CLOSED</div>
+    <div class="mi-clock" id="mi-clock">--:--:-- UTC</div>
+    <a href="/" class="mi-back">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+      HOME
+    </a>
+  </div>
+</div>
+
+<!-- Ticker -->
+<div class="mi-ticker">
+  <div class="mi-ticker-lbl">▶ LIVE</div>
+  <div class="mi-ticker-wrap">
+    <div class="mi-ticker-track" id="mi-ticker-track"></div>
+  </div>
+</div>
+
+<!-- Tabs -->
+<div class="mi-tabs">
+  <div class="mi-tab active" onclick="miTab('overview',this)">OVERVIEW</div>
+  <div class="mi-tab" onclick="miTab('equities',this)">EQUITIES</div>
+  <div class="mi-tab" onclick="miTab('rates',this)">FX &amp; RATES</div>
+  <div class="mi-tab" onclick="miTab('macro',this)">MACRO</div>
+  <div class="mi-tab" onclick="miTab('signals',this)">SIGNALS</div>
+</div>
+
+<!-- Content -->
+<div class="mi-content">
+
+  <!-- ═══ OVERVIEW ═══ -->
+  <div id="pane-overview" class="mi-pane active">
+    <div class="g6040">
+      <div class="mi-panel">
+        <div class="mi-ph"><div class="mi-pt">GLOBAL INDICES</div><div class="mi-pm">DELAYED 15 MIN</div></div>
+        <table class="mi-tbl">
+          <thead><tr><th>INDEX</th><th class="r">LAST</th><th class="r">CHG</th><th class="r">CHG%</th><th class="r">YTD%</th><th class="r">52W HI</th><th class="r">52W LO</th></tr></thead>
+          <tbody>
+            <tr><td class="sym">SPX</td><td class="r">5,847.23</td><td class="r pos">+12.45</td><td class="r"><span class="badge pos">▲ 0.21%</span></td><td class="r pos">+24.2%</td><td class="r mu">6,012.45</td><td class="r mu">4,682.11</td></tr>
+            <tr><td class="sym">NDX</td><td class="r">20,312.45</td><td class="r neg">−45.23</td><td class="r"><span class="badge neg">▼ 0.22%</span></td><td class="r pos">+29.1%</td><td class="r mu">21,222.20</td><td class="r mu">16,049.11</td></tr>
+            <tr><td class="sym">DJIA</td><td class="r">43,156.78</td><td class="r pos">+89.12</td><td class="r"><span class="badge pos">▲ 0.21%</span></td><td class="r pos">+17.8%</td><td class="r mu">45,073.63</td><td class="r mu">37,122.95</td></tr>
+            <tr><td class="sym">FTSE</td><td class="r">8,245.32</td><td class="r pos">+23.45</td><td class="r"><span class="badge pos">▲ 0.28%</span></td><td class="r pos">+8.4%</td><td class="r mu">8,445.80</td><td class="r mu">7,404.08</td></tr>
+            <tr><td class="sym">DAX</td><td class="r">19,890.12</td><td class="r neg">−45.67</td><td class="r"><span class="badge neg">▼ 0.23%</span></td><td class="r pos">+20.1%</td><td class="r mu">20,523.12</td><td class="r mu">16,345.02</td></tr>
+            <tr><td class="sym">NIKKEI</td><td class="r">38,923.45</td><td class="r pos">+123.45</td><td class="r"><span class="badge pos">▲ 0.32%</span></td><td class="r pos">+18.5%</td><td class="r mu">42,426.77</td><td class="r mu">31,624.28</td></tr>
+            <tr><td class="sym">HSI</td><td class="r">21,456.78</td><td class="r neg">−234.56</td><td class="r"><span class="badge neg">▼ 1.08%</span></td><td class="r pos">+18.2%</td><td class="r mu">22,000.39</td><td class="r mu">14,794.16</td></tr>
+            <tr><td class="sym">VIX</td><td class="r">18.34</td><td class="r pos">+0.82</td><td class="r"><span class="badge neg">▲ 4.67%</span></td><td class="r neg">−12.4%</td><td class="r mu">38.57</td><td class="r mu">10.62</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="vcol">
+        <div class="mi-panel">
+          <div class="mi-ph"><div class="mi-pt">FX RATES</div><div class="mi-pm">SPOT</div></div>
+          <table class="mi-tbl">
+            <thead><tr><th>PAIR</th><th class="r">RATE</th><th class="r">CHG%</th></tr></thead>
+            <tbody>
+              <tr><td class="sym">EUR/USD</td><td class="r">1.0845</td><td class="r"><span class="badge pos">▲ 0.11%</span></td></tr>
+              <tr><td class="sym">GBP/USD</td><td class="r">1.2678</td><td class="r"><span class="badge neg">▼ 0.18%</span></td></tr>
+              <tr><td class="sym">USD/JPY</td><td class="r">154.23</td><td class="r"><span class="badge pos">▲ 0.29%</span></td></tr>
+              <tr><td class="sym">USD/CHF</td><td class="r">0.8923</td><td class="r"><span class="badge pos">▲ 0.16%</span></td></tr>
+              <tr><td class="sym">AUD/USD</td><td class="r">0.6512</td><td class="r"><span class="badge neg">▼ 0.34%</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="mi-panel">
+          <div class="mi-ph"><div class="mi-pt">COMMODITIES</div><div class="mi-pm">USD</div></div>
+          <table class="mi-tbl">
+            <thead><tr><th>ASSET</th><th class="r">LAST</th><th class="r">CHG%</th></tr></thead>
+            <tbody>
+              <tr><td class="sym">GOLD</td><td class="r">2,634.50</td><td class="r"><span class="badge pos">▲ 0.32%</span></td></tr>
+              <tr><td class="sym">WTI OIL</td><td class="r">71.23</td><td class="r"><span class="badge neg">▼ 0.78%</span></td></tr>
+              <tr><td class="sym">BRENT</td><td class="r">74.89</td><td class="r"><span class="badge neg">▼ 0.60%</span></td></tr>
+              <tr><td class="sym">SILVER</td><td class="r">31.45</td><td class="r"><span class="badge pos">▲ 0.74%</span></td></tr>
+              <tr><td class="sym">NATGAS</td><td class="r">2.89</td><td class="r"><span class="badge neg">▼ 1.23%</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="mi-panel" style="margin-bottom:10px;">
+      <div class="mi-ph">
+        <div class="mi-pt">INDU % PRICE CHANGE — BY GICS SECTOR</div>
+        <div class="mi-pm">DOW JONES INDUSTRIAL AVERAGE · 30 COMPONENTS</div>
+      </div>
+      <div class="hm-outer">
+        <div class="hm-map-col">
+          <div class="hm-map-lbl">STRAIT OF HORMUZ — VESSEL TRAFFIC · SATELLITE</div>
+          <div id="hormuz-map"></div>
+          <div style="display:none" id="hormuz-svg-dead">
+            <defs>
+              <linearGradient id="lg-w" x1="0" y1="0" x2="0.4" y2="1">
+                <stop offset="0%" stop-color="#030d1c"/>
+                <stop offset="100%" stop-color="#020810"/>
+              </linearGradient>
+              <linearGradient id="lg-n" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#3c2c16"/>
+                <stop offset="100%" stop-color="#7a6238"/>
+              </linearGradient>
+              <linearGradient id="lg-s" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#8c7c42"/>
+                <stop offset="100%" stop-color="#5c4820"/>
+              </linearGradient>
+              <radialGradient id="glow-str" cx="72%" cy="54%" r="18%">
+                <stop offset="0%" stop-color="rgba(0,160,180,0.06)"/>
+                <stop offset="100%" stop-color="transparent"/>
+              </radialGradient>
+            </defs>
+
+            <!-- Water -->
+            <rect width="760" height="300" fill="url(#lg-w)"/>
+            <rect width="760" height="300" fill="url(#glow-str)"/>
+
+            <!-- Iran / Iraq land (north) -->
+            <path fill="url(#lg-n)" stroke="rgba(35,25,8,0.9)" stroke-width="0.7"
+              d="M0,0 L760,0 L760,102
+              L738,98 L715,94 L692,90 L672,88 L652,92 L633,98 L614,104
+              L594,108 L574,112 L554,112 L534,108 L515,104 L498,100 L483,98
+              L469,100 L456,106 L443,112 L428,116 L413,118 L397,115
+              L376,112 L354,110 L330,108 L304,104 L276,100 L248,98
+              L220,96 L192,93 L164,89 L135,83 L105,74 L75,63
+              L46,52 L18,43 L0,40 Z"/>
+
+            <!-- Arabian Peninsula (south) — includes Musandam peninsula -->
+            <path fill="url(#lg-s)" stroke="rgba(45,35,10,0.8)" stroke-width="0.7"
+              d="M0,300 L760,300 L760,252
+              L736,248 L712,246 L690,248 L672,252 L655,250
+              L638,244 L622,236 L607,228 L594,220 L582,212
+              L570,204 L560,194 L552,183 L547,172 L544,161
+              L543,151 L547,145 L552,151 L554,162 L554,173
+              L552,184 L550,194 L552,204 L557,213 L565,221
+              L576,227 L591,231 L608,232 L628,232 L650,235
+              L674,240 L700,246 L728,250 L760,252
+              L760,300 Z
+              M0,300 L0,238 L30,240 L62,242 L96,244 L133,248
+              L170,253 L207,257 L240,259
+              L258,253 L266,244 L270,253 L265,262
+              L300,264 L335,260 L368,256 L400,251
+              L430,246 L458,240 L482,232 L504,222
+              L522,212 L537,202 L546,191 L550,179
+              L551,167 L548,156 L543,145 L547,145
+              L543,151 L544,161 L547,172 L552,183
+              L560,194 L570,204 L582,212 L594,220
+              L607,228 L622,236 L638,244
+              L655,250 L672,252 L690,248 L712,246
+              L736,248 L760,252 L760,300 Z"/>
+
+            <!-- Qeshm Island -->
+            <ellipse cx="490" cy="124" rx="22" ry="6" fill="#5e4a28" stroke="rgba(35,25,8,0.7)" stroke-width="0.6"/>
+            <text x="490" y="127" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="6" fill="rgba(190,165,105,0.6)">QESHM</text>
+
+            <!-- Hormuz Island -->
+            <ellipse cx="535" cy="130" rx="9" ry="4" fill="#5e4a28" stroke="rgba(35,25,8,0.6)" stroke-width="0.5"/>
+
+            <!-- Bahrain (mid-Gulf island) -->
+            <ellipse cx="220" cy="220" rx="5" ry="7" fill="#6a5a30" stroke="rgba(45,35,10,0.6)" stroke-width="0.5"/>
+
+            <!-- ── Vessels: AIS-style cyan arrows ── -->
+            <!-- shape: tiny triangle pointing up = north, rotated by heading -->
+            <!-- Main Gulf OUTBOUND lane (heading ~110°) -->
+            <g fill="#00d0f0" opacity="0.88">
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(48,165) rotate(110)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(88,162) rotate(110)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(128,158) rotate(112)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(168,155) rotate(110)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(208,151) rotate(108)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(248,148) rotate(110)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(288,144) rotate(112)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(328,140) rotate(110)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(368,136) rotate(108)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(408,133) rotate(110)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(448,130) rotate(112)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(488,127) rotate(108)"/>
+            </g>
+
+            <!-- Main Gulf INBOUND lane (heading ~290°) -->
+            <g fill="#00d0f0" opacity="0.80">
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(60,178) rotate(290)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(100,175) rotate(292)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(140,172) rotate(290)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(180,169) rotate(288)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(220,166) rotate(290)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(260,163) rotate(292)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(300,160) rotate(290)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(340,157) rotate(288)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(380,154) rotate(290)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(420,150) rotate(292)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(458,146) rotate(290)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(494,142) rotate(288)"/>
+            </g>
+
+            <!-- Hormuz Strait — dense traffic -->
+            <g fill="#00d0f0" opacity="0.92">
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(510,136) rotate(90)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(521,128) rotate(270)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(532,140) rotate(90)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(543,132) rotate(270)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(554,144) rotate(90)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(565,136) rotate(270)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(576,148) rotate(45)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(587,139) rotate(225)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(598,150) rotate(90)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(610,142) rotate(270)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(622,154) rotate(135)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(634,144) rotate(315)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(646,156) rotate(90)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(657,146) rotate(270)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(516,150) rotate(180)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(528,158) rotate(0)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(540,151) rotate(90)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(552,160) rotate(270)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(562,152) rotate(45)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(574,162) rotate(225)"/>
+            </g>
+
+            <!-- Gulf of Oman (east) -->
+            <g fill="#00d0f0" opacity="0.72">
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(670,172) rotate(0)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(684,182) rotate(180)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(700,166) rotate(90)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(715,180) rotate(270)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(729,192) rotate(135)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(743,178) rotate(315)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(756,188) rotate(90)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(662,188) rotate(45)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(680,198) rotate(225)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(697,195) rotate(0)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(714,207) rotate(180)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(732,212) rotate(90)"/>
+            </g>
+
+            <!-- Kuwait / Basra port cluster -->
+            <g fill="#00d0f0" opacity="0.78">
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(22,160) rotate(135)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(36,168) rotate(315)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(50,175) rotate(90)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(35,182) rotate(270)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(60,182) rotate(0)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(44,192) rotate(180)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(66,170) rotate(45)"/>
+            </g>
+
+            <!-- Bandar Abbas port cluster -->
+            <g fill="#00d0f0" opacity="0.85">
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(470,116) rotate(180)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(482,110) rotate(0)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(477,104) rotate(90)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(491,120) rotate(270)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(464,108) rotate(45)"/>
+            </g>
+
+            <!-- UAE ports — Dubai / Abu Dhabi -->
+            <g fill="#00d0f0" opacity="0.78">
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(416,257) rotate(90)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(430,252) rotate(270)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(443,258) rotate(0)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(456,264) rotate(180)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(428,265) rotate(135)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(444,258) rotate(315)"/>
+            </g>
+
+            <!-- Qatar / Bahrain cluster -->
+            <g fill="#00d0f0" opacity="0.76">
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(253,228) rotate(90)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(265,237) rotate(270)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(241,232) rotate(0)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(269,224) rotate(180)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(248,242) rotate(315)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(200,215) rotate(90)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(214,222) rotate(270)"/>
+            </g>
+
+            <!-- Mid-Gulf scattered -->
+            <g fill="#00d0f0" opacity="0.72">
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(132,185) rotate(60)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(152,193) rotate(240)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(172,184) rotate(120)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(193,191) rotate(300)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(214,183) rotate(60)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(236,190) rotate(240)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(258,183) rotate(120)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(280,190) rotate(300)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(302,182) rotate(60)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(324,189) rotate(240)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(346,181) rotate(120)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(368,188) rotate(300)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(390,181) rotate(60)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(412,187) rotate(240)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(108,196) rotate(90)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(121,204) rotate(270)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(138,197) rotate(45)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(156,205) rotate(225)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(102,184) rotate(0)"/>
+              <polygon points="0,-4.5 2.8,3 -2.8,3" transform="translate(116,192) rotate(180)"/>
+            </g>
+
+            <!-- Labels -->
+            <text x="50" y="28" font-family="JetBrains Mono,monospace" font-size="9" font-weight="700" letter-spacing=".09em" fill="rgba(175,148,92,0.52)">IRAN</text>
+            <text x="608" y="24" font-family="JetBrains Mono,monospace" font-size="7.5" letter-spacing=".07em" fill="rgba(175,148,92,0.42)">GULF OF OMAN</text>
+            <text x="28" y="285" font-family="JetBrains Mono,monospace" font-size="7.5" letter-spacing=".07em" fill="rgba(175,148,92,0.48)">SAUDI ARABIA / KUWAIT</text>
+            <text x="420" y="290" font-family="JetBrains Mono,monospace" font-size="7.5" letter-spacing=".07em" fill="rgba(175,148,92,0.48)">UAE</text>
+            <text x="632" y="285" font-family="JetBrains Mono,monospace" font-size="7.5" letter-spacing=".07em" fill="rgba(175,148,92,0.44)">OMAN</text>
+            <text x="190" y="208" font-family="JetBrains Mono,monospace" font-size="10" font-weight="700" letter-spacing=".18em" fill="rgba(8,68,105,0.5)">PERSIAN GULF</text>
+            <text x="525" y="185" font-family="JetBrains Mono,monospace" font-size="7" letter-spacing=".1em" fill="rgba(8,68,105,0.45)">HORMUZ</text>
+
+            <!-- Highlight vessels: GULF VENTURE detained (red) -->
+            <g id="t1" class="hm-tanker" data-name="GULF VENTURE" data-status="DETAINED" data-flag="IR" data-hdg="090°" style="cursor:pointer;">
+              <polygon points="0,-6 3.5,4 -3.5,4" transform="translate(548,142) rotate(90)" fill="#ef4444" opacity="0.95"/>
+              <circle cx="548" cy="142" r="9" fill="none" stroke="#ef4444" stroke-width="1" stroke-dasharray="3,2.5" opacity="0.55"/>
+            </g>
+
+            <!-- HORMUZ STAR anchored (orange) -->
+            <g id="t2" class="hm-tanker" data-name="HORMUZ STAR" data-status="AT ANCHOR" data-flag="PA" data-hdg="000°" style="cursor:pointer;">
+              <polygon points="0,-6 3.5,4 -3.5,4" transform="translate(522,128) rotate(0)" fill="#f59e0b" opacity="0.95"/>
+            </g>
+
+            <!-- AL JASRAH delayed (orange) -->
+            <g id="t3" class="hm-tanker" data-name="AL JASRAH" data-status="DELAYED" data-flag="KW" data-hdg="270°" style="cursor:pointer;">
+              <polygon points="0,-6 3.5,4 -3.5,4" transform="translate(408,133) rotate(270)" fill="#f59e0b" opacity="0.95"/>
+            </g>
+
+            <!-- North arrow -->
+            <g transform="translate(732,274)">
+              <line x1="0" y1="12" x2="0" y2="-7" stroke="rgba(148,163,184,0.52)" stroke-width="1.2"/>
+              <polygon points="0,-11 -4,-1 4,-1" fill="rgba(148,163,184,0.62)"/>
+              <text x="0" y="20" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="7" fill="rgba(148,163,184,0.52)">N</text>
+            </g>
+          </div>
+        </div>
+        <div class="hm-wrap" id="hm-wrap"></div>
+      </div>
+    </div>
+
+    <div class="mi-panel">
+      <div class="mi-ph"><div class="mi-pt">MARKET NEWS</div><div class="mi-pm">LATEST</div></div>
+      <div class="g3" style="margin:0;">
+        <div>
+          <div class="mi-news"><div class="mi-news-hd"><span class="mi-ntag mac">MACRO</span><span class="mi-ntime">14:28</span></div><div class="mi-nhl">Fed holds rates at 5.25–5.50%, signals two cuts in 2025 amid cooling inflation data</div><div class="mi-nsrc">REUTERS · 12 MIN AGO</div></div>
+          <div class="mi-news"><div class="mi-news-hd"><span class="mi-ntag eq">EQUITY</span><span class="mi-ntime">14:15</span></div><div class="mi-nhl">NVIDIA surges 4.2% after beating Q3 estimates; data center revenue up 112% YoY</div><div class="mi-nsrc">BLOOMBERG · 25 MIN AGO</div></div>
+        </div>
+        <div>
+          <div class="mi-news"><div class="mi-news-hd"><span class="mi-ntag fi">FIXED INC</span><span class="mi-ntime">13:58</span></div><div class="mi-nhl">US 10Y yield climbs to 4.32% on stronger-than-expected jobs data; curve steepens</div><div class="mi-nsrc">FINANCIAL TIMES · 42 MIN AGO</div></div>
+          <div class="mi-news"><div class="mi-news-hd"><span class="mi-ntag fx">FX</span><span class="mi-ntime">13:45</span></div><div class="mi-nhl">Dollar strengthens as ECB signals December rate cut; EUR/USD tests 1.0800 support level</div><div class="mi-nsrc">WALL STREET JOURNAL · 55 MIN AGO</div></div>
+        </div>
+        <div>
+          <div class="mi-news"><div class="mi-news-hd"><span class="mi-ntag en">ENERGY</span><span class="mi-ntime">13:32</span></div><div class="mi-nhl">WTI oil falls 0.8% as OPEC+ weighs extending output cuts into Q1 2025</div><div class="mi-nsrc">REUTERS · 1H AGO</div></div>
+          <div class="mi-news"><div class="mi-news-hd"><span class="mi-ntag ai">AI</span><span class="mi-ntime">13:12</span></div><div class="mi-nhl">Microsoft Azure AI revenues hit $10B run rate; Copilot adoption accelerates across enterprise</div><div class="mi-nsrc">CNBC · 1H 20MIN AGO</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ EQUITIES ═══ -->
+  <div id="pane-equities" class="mi-pane">
+    <div class="mi-panel" style="margin-bottom:10px;">
+      <div class="mi-ph"><div class="mi-pt">EQUITY WATCHLIST</div><div class="mi-pm">US MARKETS · DEMO DATA</div></div>
+      <table class="mi-tbl">
+        <thead><tr><th>TICKER</th><th>NAME</th><th class="r">LAST</th><th class="r">CHG</th><th class="r">CHG%</th><th class="r">VOLUME</th><th class="r">MKT CAP</th><th class="r">P/E</th><th class="r">52W HI</th><th class="r">52W LO</th></tr></thead>
+        <tbody>
+          <tr><td class="sym">AAPL</td><td class="mu">Apple Inc.</td><td class="r">228.87</td><td class="r pos">+1.23</td><td class="r"><span class="badge pos">▲ 0.54%</span></td><td class="r mu">52.3M</td><td class="r mu">3.48T</td><td class="r">32.4</td><td class="r mu">237.23</td><td class="r mu">164.08</td></tr>
+          <tr><td class="sym">MSFT</td><td class="mu">Microsoft Corp.</td><td class="r">431.50</td><td class="r pos">+3.45</td><td class="r"><span class="badge pos">▲ 0.81%</span></td><td class="r mu">18.7M</td><td class="r mu">3.21T</td><td class="r">36.8</td><td class="r mu">468.35</td><td class="r mu">309.45</td></tr>
+          <tr><td class="sym">NVDA</td><td class="mu">NVIDIA Corp.</td><td class="r">146.70</td><td class="r pos">+5.94</td><td class="r"><span class="badge pos">▲ 4.22%</span></td><td class="r mu">214.5M</td><td class="r mu">3.60T</td><td class="r">53.2</td><td class="r mu">152.89</td><td class="r mu">45.01</td></tr>
+          <tr><td class="sym">AMZN</td><td class="mu">Amazon.com Inc.</td><td class="r">213.45</td><td class="r neg">−1.78</td><td class="r"><span class="badge neg">▼ 0.83%</span></td><td class="r mu">32.1M</td><td class="r mu">2.25T</td><td class="r">44.6</td><td class="r mu">230.07</td><td class="r mu">153.31</td></tr>
+          <tr><td class="sym">GOOGL</td><td class="mu">Alphabet Inc.</td><td class="r">175.89</td><td class="r pos">+0.45</td><td class="r"><span class="badge pos">▲ 0.26%</span></td><td class="r mu">28.4M</td><td class="r mu">2.19T</td><td class="r">22.8</td><td class="r mu">198.86</td><td class="r mu">130.67</td></tr>
+          <tr><td class="sym">META</td><td class="mu">Meta Platforms</td><td class="r">589.23</td><td class="r neg">−4.56</td><td class="r"><span class="badge neg">▼ 0.77%</span></td><td class="r mu">11.8M</td><td class="r mu">1.49T</td><td class="r">29.4</td><td class="r mu">638.40</td><td class="r mu">344.47</td></tr>
+          <tr><td class="sym">TSLA</td><td class="mu">Tesla Inc.</td><td class="r">348.77</td><td class="r pos">+12.34</td><td class="r"><span class="badge pos">▲ 3.67%</span></td><td class="r mu">98.7M</td><td class="r mu">1.12T</td><td class="r">89.1</td><td class="r mu">358.64</td><td class="r mu">138.80</td></tr>
+          <tr><td class="sym">JPM</td><td class="mu">JPMorgan Chase</td><td class="r">246.78</td><td class="r pos">+1.12</td><td class="r"><span class="badge pos">▲ 0.46%</span></td><td class="r mu">9.2M</td><td class="r mu">714B</td><td class="r">13.2</td><td class="r mu">256.35</td><td class="r mu">171.62</td></tr>
+          <tr><td class="sym">GS</td><td class="mu">Goldman Sachs</td><td class="r">589.45</td><td class="r pos">+6.78</td><td class="r"><span class="badge pos">▲ 1.16%</span></td><td class="r mu">2.1M</td><td class="r mu">198B</td><td class="r">16.8</td><td class="r mu">600.71</td><td class="r mu">385.59</td></tr>
+          <tr><td class="sym">ASML</td><td class="mu">ASML Holding NV</td><td class="r">717.34</td><td class="r neg">−8.90</td><td class="r"><span class="badge neg">▼ 1.23%</span></td><td class="r mu">1.8M</td><td class="r mu">283B</td><td class="r">31.4</td><td class="r mu">1,110.09</td><td class="r mu">604.44</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="g2">
+      <div class="mi-panel">
+        <div class="mi-ph"><div class="mi-pt">SECTOR PERFORMANCE — S&amp;P 500</div><div class="mi-pm">1D</div></div>
+        <div class="sector-grid">
+          <div class="sector-cell" style="background:rgba(34,197,94,0.18)"><div class="sn">TECH</div><div class="sv" style="color:#22c55e">+1.24%</div></div>
+          <div class="sector-cell" style="background:rgba(34,197,94,0.10)"><div class="sn">FINANCIALS</div><div class="sv" style="color:#22c55e">+0.68%</div></div>
+          <div class="sector-cell" style="background:rgba(34,197,94,0.08)"><div class="sn">HEALTH CARE</div><div class="sv" style="color:#22c55e">+0.41%</div></div>
+          <div class="sector-cell" style="background:rgba(34,197,94,0.05)"><div class="sn">INDUSTRIALS</div><div class="sv" style="color:#22c55e">+0.19%</div></div>
+          <div class="sector-cell" style="background:rgba(239,68,68,0.10)"><div class="sn">ENERGY</div><div class="sv" style="color:#ef4444">−0.67%</div></div>
+          <div class="sector-cell" style="background:rgba(239,68,68,0.08)"><div class="sn">MATERIALS</div><div class="sv" style="color:#ef4444">−0.45%</div></div>
+          <div class="sector-cell" style="background:rgba(239,68,68,0.06)"><div class="sn">UTILITIES</div><div class="sv" style="color:#ef4444">−0.23%</div></div>
+          <div class="sector-cell" style="background:rgba(239,68,68,0.12)"><div class="sn">REAL ESTATE</div><div class="sv" style="color:#ef4444">−0.78%</div></div>
+        </div>
+      </div>
+      <div class="mi-panel">
+        <div class="mi-ph"><div class="mi-pt">TOP MOVERS</div><div class="mi-pm">% CHG · 1D</div></div>
+        <table class="mi-tbl">
+          <thead><tr><th>TICKER</th><th>NAME</th><th class="r">LAST</th><th class="r">% CHG</th></tr></thead>
+          <tbody>
+            <tr><td class="sym">NVDA</td><td class="mu">NVIDIA</td><td class="r">146.70</td><td class="r"><span class="badge pos">▲ 4.22%</span></td></tr>
+            <tr><td class="sym">TSLA</td><td class="mu">Tesla</td><td class="r">348.77</td><td class="r"><span class="badge pos">▲ 3.67%</span></td></tr>
+            <tr><td class="sym">GS</td><td class="mu">Goldman</td><td class="r">589.45</td><td class="r"><span class="badge pos">▲ 1.16%</span></td></tr>
+            <tr><td class="sym">ASML</td><td class="mu">ASML</td><td class="r">717.34</td><td class="r"><span class="badge neg">▼ 1.23%</span></td></tr>
+            <tr><td class="sym">META</td><td class="mu">Meta</td><td class="r">589.23</td><td class="r"><span class="badge neg">▼ 0.77%</span></td></tr>
+            <tr><td class="sym">AMZN</td><td class="mu">Amazon</td><td class="r">213.45</td><td class="r"><span class="badge neg">▼ 0.83%</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ FX & RATES ═══ -->
+  <div id="pane-rates" class="mi-pane">
+    <div class="g2" style="margin-bottom:10px;">
+      <div class="mi-panel">
+        <div class="mi-ph"><div class="mi-pt">CURRENCY PAIRS</div><div class="mi-pm">SPOT</div></div>
+        <table class="mi-tbl">
+          <thead><tr><th>PAIR</th><th class="r">BID</th><th class="r">ASK</th><th class="r">LAST</th><th class="r">CHG</th><th class="r">CHG%</th><th class="r">DAY HI</th><th class="r">DAY LO</th></tr></thead>
+          <tbody>
+            <tr><td class="sym">EUR/USD</td><td class="r">1.0843</td><td class="r">1.0847</td><td class="r">1.0845</td><td class="r pos">+0.0012</td><td class="r"><span class="badge pos">▲ 0.11%</span></td><td class="r mu">1.0862</td><td class="r mu">1.0823</td></tr>
+            <tr><td class="sym">GBP/USD</td><td class="r">1.2676</td><td class="r">1.2680</td><td class="r">1.2678</td><td class="r neg">−0.0023</td><td class="r"><span class="badge neg">▼ 0.18%</span></td><td class="r mu">1.2712</td><td class="r mu">1.2665</td></tr>
+            <tr><td class="sym">USD/JPY</td><td class="r">154.21</td><td class="r">154.25</td><td class="r">154.23</td><td class="r pos">+0.45</td><td class="r"><span class="badge pos">▲ 0.29%</span></td><td class="r mu">154.78</td><td class="r mu">153.45</td></tr>
+            <tr><td class="sym">USD/CHF</td><td class="r">0.8921</td><td class="r">0.8925</td><td class="r">0.8923</td><td class="r pos">+0.0014</td><td class="r"><span class="badge pos">▲ 0.16%</span></td><td class="r mu">0.8945</td><td class="r mu">0.8901</td></tr>
+            <tr><td class="sym">AUD/USD</td><td class="r">0.6510</td><td class="r">0.6514</td><td class="r">0.6512</td><td class="r neg">−0.0022</td><td class="r"><span class="badge neg">▼ 0.34%</span></td><td class="r mu">0.6545</td><td class="r mu">0.6498</td></tr>
+            <tr><td class="sym">USD/CAD</td><td class="r">1.3967</td><td class="r">1.3971</td><td class="r">1.3969</td><td class="r pos">+0.0034</td><td class="r"><span class="badge pos">▲ 0.24%</span></td><td class="r mu">1.3989</td><td class="r mu">1.3934</td></tr>
+            <tr><td class="sym">EUR/GBP</td><td class="r">0.8556</td><td class="r">0.8560</td><td class="r">0.8558</td><td class="r pos">+0.0023</td><td class="r"><span class="badge pos">▲ 0.27%</span></td><td class="r mu">0.8574</td><td class="r mu">0.8531</td></tr>
+            <tr><td class="sym">EUR/JPY</td><td class="r">167.21</td><td class="r">167.27</td><td class="r">167.24</td><td class="r pos">+0.56</td><td class="r"><span class="badge pos">▲ 0.34%</span></td><td class="r mu">167.89</td><td class="r mu">166.12</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="mi-panel">
+        <div class="mi-ph"><div class="mi-pt">US TREASURY YIELD CURVE</div><div class="mi-pm">% YTM</div></div>
+        <div class="yield-bars" id="yield-bars"></div>
+        <table class="mi-tbl" style="margin-top:6px;">
+          <thead><tr><th>TENOR</th><th class="r">YIELD</th><th class="r">CHG</th><th class="r">PREV</th></tr></thead>
+          <tbody>
+            <tr><td class="mu">3M</td><td class="r">5.22%</td><td class="r pos">+0.02</td><td class="r mu">5.20%</td></tr>
+            <tr><td class="mu">2Y</td><td class="r">4.31%</td><td class="r pos">+0.04</td><td class="r mu">4.27%</td></tr>
+            <tr><td class="mu">5Y</td><td class="r">4.18%</td><td class="r pos">+0.03</td><td class="r mu">4.15%</td></tr>
+            <tr><td class="mu">10Y</td><td class="r">4.32%</td><td class="r pos">+0.05</td><td class="r mu">4.27%</td></tr>
+            <tr><td class="mu">30Y</td><td class="r">4.54%</td><td class="r pos">+0.03</td><td class="r mu">4.51%</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="g2">
+      <div class="mi-panel">
+        <div class="mi-ph"><div class="mi-pt">SOVEREIGN 10Y BONDS</div><div class="mi-pm">% YIELD</div></div>
+        <table class="mi-tbl">
+          <thead><tr><th>COUNTRY</th><th class="r">YIELD</th><th class="r">CHG</th><th class="r">vs UST</th><th class="r">RATING</th></tr></thead>
+          <tbody>
+            <tr><td class="sym">US</td><td class="r">4.32%</td><td class="r pos">+0.05</td><td class="r mu">—</td><td class="r mu">AA+</td></tr>
+            <tr><td class="sym">UK</td><td class="r">4.41%</td><td class="r pos">+0.03</td><td class="r pos">+9bp</td><td class="r mu">AA</td></tr>
+            <tr><td class="sym">Germany</td><td class="r">2.21%</td><td class="r pos">+0.02</td><td class="r neg">−211bp</td><td class="r mu">AAA</td></tr>
+            <tr><td class="sym">France</td><td class="r">2.98%</td><td class="r pos">+0.04</td><td class="r neg">−134bp</td><td class="r mu">AA−</td></tr>
+            <tr><td class="sym">Japan</td><td class="r">1.05%</td><td class="r mu">0.00</td><td class="r neg">−327bp</td><td class="r mu">A+</td></tr>
+            <tr><td class="sym">Italy</td><td class="r">3.45%</td><td class="r pos">+0.06</td><td class="r neg">−87bp</td><td class="r mu">BBB+</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="mi-panel">
+        <div class="mi-ph"><div class="mi-pt">CREDIT SPREADS</div><div class="mi-pm">OAS — BPS</div></div>
+        <table class="mi-tbl">
+          <thead><tr><th>SEGMENT</th><th class="r">OAS</th><th class="r">1D CHG</th><th class="r">1W</th><th class="r">YTD</th></tr></thead>
+          <tbody>
+            <tr><td class="sym">US IG</td><td class="r">95</td><td class="r pos">+2</td><td class="r neg">+8</td><td class="r neg">+12</td></tr>
+            <tr><td class="sym">US HY</td><td class="r">312</td><td class="r pos">+8</td><td class="r neg">+21</td><td class="r neg">+34</td></tr>
+            <tr><td class="sym">EUR IG</td><td class="r">110</td><td class="r pos">+3</td><td class="r neg">+11</td><td class="r pos">−5</td></tr>
+            <tr><td class="sym">EUR HY</td><td class="r">345</td><td class="r pos">+12</td><td class="r neg">+28</td><td class="r pos">−18</td></tr>
+            <tr><td class="sym">EM CORP</td><td class="r">245</td><td class="r pos">+5</td><td class="r neg">+14</td><td class="r neg">+22</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ MACRO ═══ -->
+  <div id="pane-macro" class="mi-pane">
+    <div class="g2" style="margin-bottom:10px;">
+      <div class="mi-panel">
+        <div class="mi-ph"><div class="mi-pt">US ECONOMIC INDICATORS</div><div class="mi-pm">LATEST RELEASE</div></div>
+        <div class="mac-item"><div class="mac-name">CPI (YoY)</div><div class="mac-r"><div class="mac-prev">Prev: 3.2%</div><div class="mac-val" style="color:#22c55e">2.6%</div></div></div>
+        <div class="mac-item"><div class="mac-name">Core CPI (YoY)</div><div class="mac-r"><div class="mac-prev">Prev: 3.3%</div><div class="mac-val">3.3%</div></div></div>
+        <div class="mac-item"><div class="mac-name">PCE Deflator (YoY)</div><div class="mac-r"><div class="mac-prev">Prev: 2.1%</div><div class="mac-val" style="color:#22c55e">2.3%</div></div></div>
+        <div class="mac-item"><div class="mac-name">GDP Growth (QoQ Ann.)</div><div class="mac-r"><div class="mac-prev">Prev: 3.0%</div><div class="mac-val" style="color:#22c55e">2.8%</div></div></div>
+        <div class="mac-item"><div class="mac-name">Non-Farm Payrolls</div><div class="mac-r"><div class="mac-prev">Prev: 254K</div><div class="mac-val">227K</div></div></div>
+        <div class="mac-item"><div class="mac-name">Unemployment Rate</div><div class="mac-r"><div class="mac-prev">Prev: 4.1%</div><div class="mac-val" style="color:#22c55e">4.2%</div></div></div>
+        <div class="mac-item"><div class="mac-name">ISM Manufacturing PMI</div><div class="mac-r"><div class="mac-prev">Prev: 47.2</div><div class="mac-val" style="color:#ef4444">46.5</div></div></div>
+        <div class="mac-item"><div class="mac-name">Consumer Confidence</div><div class="mac-r"><div class="mac-prev">Prev: 99.2</div><div class="mac-val" style="color:#22c55e">111.7</div></div></div>
+      </div>
+      <div class="mi-panel">
+        <div class="mi-ph"><div class="mi-pt">CENTRAL BANK RATES</div><div class="mi-pm">CURRENT / NEXT MTG</div></div>
+        <table class="mi-tbl">
+          <thead><tr><th>CENTRAL BANK</th><th class="r">RATE</th><th class="r">BIAS</th><th class="r">NEXT MTG</th><th class="r">MARKET EXP</th></tr></thead>
+          <tbody>
+            <tr><td class="sym">US FED</td><td class="r">5.25–5.50%</td><td class="r"><span class="badge neg">EASING</span></td><td class="r mu">Dec 17–18</td><td class="r mu">−25bp</td></tr>
+            <tr><td class="sym">ECB</td><td class="r">3.25%</td><td class="r"><span class="badge neg">EASING</span></td><td class="r mu">Dec 12</td><td class="r mu">−25bp</td></tr>
+            <tr><td class="sym">BOE</td><td class="r">4.75%</td><td class="r"><span class="badge neg">EASING</span></td><td class="r mu">Dec 19</td><td class="r mu">HOLD</td></tr>
+            <tr><td class="sym">BOJ</td><td class="r">0.25%</td><td class="r"><span class="badge pos">HIKING</span></td><td class="r mu">Dec 18–19</td><td class="r mu">+25bp</td></tr>
+            <tr><td class="sym">PBoC</td><td class="r">3.10%</td><td class="r"><span class="badge neg">EASING</span></td><td class="r mu">Dec 20</td><td class="r mu">−25bp</td></tr>
+            <tr><td class="sym">SNB</td><td class="r">1.00%</td><td class="r"><span class="badge neg">EASING</span></td><td class="r mu">Dec 12</td><td class="r mu">−25bp</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="mi-panel">
+      <div class="mi-ph"><div class="mi-pt">ECONOMIC CALENDAR — THIS WEEK</div><div class="mi-pm">UTC</div></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;">
+        <div>
+          <div class="cal-item"><div class="cal-date">MON 13:30</div><div class="cal-ev">US PPI (MoM) — Oct</div><div class="cal-imp hi">HIGH</div></div>
+          <div class="cal-item"><div class="cal-date">TUE 10:00</div><div class="cal-ev">EU ZEW Economic Sentiment</div><div class="cal-imp me">MED</div></div>
+          <div class="cal-item"><div class="cal-date">TUE 13:30</div><div class="cal-ev">US CPI (YoY) — Oct</div><div class="cal-imp hi">HIGH</div></div>
+          <div class="cal-item"><div class="cal-date">WED 13:30</div><div class="cal-ev">US Retail Sales (MoM)</div><div class="cal-imp hi">HIGH</div></div>
+        </div>
+        <div>
+          <div class="cal-item"><div class="cal-date">WED 19:00</div><div class="cal-ev">FOMC Minutes Release</div><div class="cal-imp hi">HIGH</div></div>
+          <div class="cal-item"><div class="cal-date">THU 09:00</div><div class="cal-ev">ECB Account of Oct Meeting</div><div class="cal-imp me">MED</div></div>
+          <div class="cal-item"><div class="cal-date">THU 13:30</div><div class="cal-ev">US Initial Jobless Claims</div><div class="cal-imp me">MED</div></div>
+          <div class="cal-item"><div class="cal-date">FRI 15:00</div><div class="cal-ev">US Existing Home Sales</div><div class="cal-imp lo">LOW</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ SIGNALS ═══ -->
+  <div id="pane-signals" class="mi-pane">
+    <div class="g2">
+      <div class="mi-panel">
+        <div class="mi-ph"><div class="mi-pt">AI MARKET SIGNALS</div><div class="mi-pm">MODEL: TRABA-ALPHA v2.1</div></div>
+        <div class="sig-item"><div class="sig-dir bull">▲</div><div><div class="sig-ticker">NVDA <span style="color:#22c55e;font-size:9px;font-weight:400;">STRONG BUY</span></div><div class="sig-txt">Breakout above 200-day MA confirmed. Data centre demand accelerating. Options flow bullish with 82% call skew on Dec expiry.</div><div class="sig-meta">CONFIDENCE: 87% · 14:05 UTC · HORIZON: 5–10D</div></div></div>
+        <div class="sig-item"><div class="sig-dir bull">▲</div><div><div class="sig-ticker">SPX <span style="color:#22c55e;font-size:9px;font-weight:400;">BULLISH</span></div><div class="sig-txt">Year-end seasonality positive. Buyback window reopens post-earnings. Breadth improving — 73% of SPX above 50-day MA.</div><div class="sig-meta">CONFIDENCE: 72% · 13:45 UTC · HORIZON: 15–20D</div></div></div>
+        <div class="sig-item"><div class="sig-dir bear">▼</div><div><div class="sig-ticker">USD/JPY <span style="color:#ef4444;font-size:9px;font-weight:400;">BEARISH</span></div><div class="sig-txt">BOJ rate hike probability rising to 68% for December. Carry trade unwind risk elevated. RSI divergence on 4H chart.</div><div class="sig-meta">CONFIDENCE: 65% · 13:12 UTC · HORIZON: 3–7D</div></div></div>
+        <div class="sig-item"><div class="sig-dir bear">▼</div><div><div class="sig-ticker">WTI OIL <span style="color:#ef4444;font-size:9px;font-weight:400;">BEARISH</span></div><div class="sig-txt">OPEC+ extension already priced in. Demand weakness signals from China manufacturing PMI. Seasonal headwinds into Q1.</div><div class="sig-meta">CONFIDENCE: 61% · 12:58 UTC · HORIZON: 10–20D</div></div></div>
+        <div class="sig-item"><div class="sig-dir neut">—</div><div><div class="sig-ticker">GOLD <span style="color:#94a3b8;font-size:9px;font-weight:400;">NEUTRAL</span></div><div class="sig-txt">Consolidating $2,600–$2,680. Dollar strength a headwind but geopolitical premium provides a floor. Wait for breakout.</div><div class="sig-meta">CONFIDENCE: 48% · 12:30 UTC · HORIZON: 5–10D</div></div></div>
+      </div>
+      <div class="vcol">
+        <div class="mi-panel">
+          <div class="mi-ph"><div class="mi-pt">MARKET SENTIMENT</div><div class="mi-pm">AI COMPOSITE</div></div>
+          <div class="sent-wrap">
+            <div class="sent-lbl">OVERALL — MODERATELY BULLISH</div>
+            <div class="sent-track"><div class="sent-bar" style="width:65%;background:linear-gradient(90deg,#22c55e,#84cc16);"></div></div>
+            <div class="sent-val" style="color:#22c55e;">65 / 100</div>
+            <div class="sent-div"></div>
+            <div class="sent-lbl">EQUITIES</div>
+            <div class="sent-track"><div class="sent-bar" style="width:72%;background:linear-gradient(90deg,#22c55e,#84cc16);"></div></div>
+            <div class="sent-val" style="color:#22c55e;">72 / 100</div>
+            <div class="sent-div"></div>
+            <div class="sent-lbl">FIXED INCOME</div>
+            <div class="sent-track"><div class="sent-bar" style="width:45%;background:linear-gradient(90deg,#ef4444,#f97316);"></div></div>
+            <div class="sent-val" style="color:#f97316;">45 / 100</div>
+            <div class="sent-div"></div>
+            <div class="sent-lbl">FX — USD STRENGTH</div>
+            <div class="sent-track"><div class="sent-bar" style="width:58%;background:linear-gradient(90deg,#14B8A6,#38BDF8);"></div></div>
+            <div class="sent-val" style="color:#14B8A6;">58 / 100</div>
+          </div>
+        </div>
+        <div class="mi-panel">
+          <div class="mi-ph"><div class="mi-pt">RISK INDICATORS</div><div class="mi-pm">LIVE</div></div>
+          <table class="mi-tbl">
+            <thead><tr><th>INDICATOR</th><th class="r">VALUE</th><th class="r">LEVEL</th></tr></thead>
+            <tbody>
+              <tr><td>VIX (Fear Index)</td><td class="r">18.34</td><td class="r"><span class="badge warn">MODERATE</span></td></tr>
+              <tr><td>MOVE (Bond Vol)</td><td class="r">112.4</td><td class="r"><span class="badge warn">ELEVATED</span></td></tr>
+              <tr><td>Credit Spreads</td><td class="r">95bp</td><td class="r"><span class="badge pos">LOW</span></td></tr>
+              <tr><td>EM Stress Index</td><td class="r">23.1</td><td class="r"><span class="badge pos">STABLE</span></td></tr>
+              <tr><td>Systemic Risk</td><td class="r">1.2%</td><td class="r"><span class="badge pos">LOW</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /mi-content -->
+
+<!-- Footer -->
+<div class="mi-foot">
+  <div class="mi-foot-item">
+    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#14B8A6" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+    ALL DATA ILLUSTRATIVE / DEMO
+  </div>
+  <div class="mi-foot-item">TRABA AI LABS · MARKET INTELLIGENCE v1.0</div>
+  <div class="mi-foot-live">
+    <div style="width:5px;height:5px;border-radius:50%;background:#14B8A6;animation:pulse 2s ease-in-out infinite;"></div>
+    <span id="mi-foot-time">--:--:-- UTC</span>
+  </div>
+</div>
+
+<script>
+// Tab switch
+function miTab(id, el) {
+  document.querySelectorAll('.mi-pane').forEach(function(p){ p.classList.remove('active'); });
+  document.querySelectorAll('.mi-tab').forEach(function(t){ t.classList.remove('active'); });
+  document.getElementById('pane-' + id).classList.add('active');
+  el.classList.add('active');
+}
+
+// Clock + market status
+function updateClock() {
+  var now = new Date();
+  var h = now.getUTCHours(), m = now.getUTCMinutes();
+  var utc = now.toUTCString().split(' ')[4];
+  document.getElementById('mi-clock').textContent = utc + ' UTC';
+  document.getElementById('mi-foot-time').textContent = utc + ' UTC';
+
+  var usOpen   = h >= 14 && (h < 21 || (h === 20 && m <= 59));
+  var euOpen   = h >= 8  && (h < 16 || (h === 16 && m <= 30));
+  var asiaOpen = (h >= 23) || (h < 8);
+
+  function setBadge(id, open) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.className = 'mi-badge ' + (open ? 'open' : 'closed');
+  }
+  setBadge('badge-us',   usOpen);
+  setBadge('badge-eu',   euOpen);
+  setBadge('badge-asia', asiaOpen);
+}
+updateClock();
+setInterval(updateClock, 1000);
+
+// Ticker
+(function() {
+  var items = [
+    {sym:'SPX',val:'5,847.23',chg:'+0.21%',cls:'pos'},{sym:'NDX',val:'20,312',chg:'−0.22%',cls:'neg'},
+    {sym:'DJIA',val:'43,156',chg:'+0.21%',cls:'pos'},{sym:'FTSE',val:'8,245',chg:'+0.28%',cls:'pos'},
+    {sym:'DAX',val:'19,890',chg:'−0.23%',cls:'neg'},{sym:'NIKKEI',val:'38,923',chg:'+0.32%',cls:'pos'},
+    {sym:'HSI',val:'21,456',chg:'−1.08%',cls:'neg'},{sym:'EUR/USD',val:'1.0845',chg:'+0.11%',cls:'pos'},
+    {sym:'GBP/USD',val:'1.2678',chg:'−0.18%',cls:'neg'},{sym:'USD/JPY',val:'154.23',chg:'+0.29%',cls:'pos'},
+    {sym:'GOLD',val:'2,634.50',chg:'+0.32%',cls:'pos'},{sym:'WTI',val:'71.23',chg:'−0.78%',cls:'neg'},
+    {sym:'BRENT',val:'74.89',chg:'−0.60%',cls:'neg'},{sym:'NVDA',val:'146.70',chg:'+4.22%',cls:'pos'},
+    {sym:'AAPL',val:'228.87',chg:'+0.54%',cls:'pos'},{sym:'TSLA',val:'348.77',chg:'+3.67%',cls:'pos'},
+    {sym:'BTC',val:'92,450',chg:'+1.34%',cls:'pos'},{sym:'10Y UST',val:'4.32%',chg:'+0.05',cls:'pos'},
+    {sym:'VIX',val:'18.34',chg:'+4.67%',cls:'pos'},{sym:'SILVER',val:'31.45',chg:'+0.74%',cls:'pos'},
+  ];
+  var html = '';
+  [items,items].forEach(function(set){
+    set.forEach(function(it){
+      html += '<div class="mi-ticker-item"><span class="sym">'+it.sym+'</span> <span>'+it.val+'</span> <span class="chg '+it.cls+'">'+it.chg+'</span></div>';
+    });
+  });
+  document.getElementById('mi-ticker-track').innerHTML = html;
+})();
+
+// ── INDU Donut — % Change by GICS Sector ──
+(function() {
+  var DATA = [
+    { abbr:'INFORMATION TECHNOLOGY', n:5, w:26, chg:+0.70 },
+    { abbr:'FINANCIALS',             n:5, w:20, chg:+0.35 },
+    { abbr:'INDUSTRIALS',            n:4, w:16, chg:+0.14 },
+    { abbr:'CONSUMER DISC.',         n:4, w:13, chg:+0.50 },
+    { abbr:'HEALTH CARE',            n:4, w:12, chg:-0.28 },
+    { abbr:'CONSUMER STAPLES',       n:3, w: 6, chg:-0.18 },
+    { abbr:'ENERGY',                 n:1, w: 3, chg:+1.10 },
+    { abbr:'MATERIALS',              n:1, w: 2, chg:-0.42 },
+  ];
+
+  function c(v) {
+    if (v >=  1.0) return '#22c55e';
+    if (v >=  0.4) return '#16a34a';
+    if (v >=  0.0) return '#166534';
+    if (v >= -0.3) return '#7f1d1d';
+    if (v >= -0.6) return '#991b1b';
+    return '#b91c1c';
+  }
+
+  var el = document.getElementById('hm-wrap');
+  if (!el) return;
+
+  var W=760, H=262, cx=185, cy=131, ro=107, ri=62;
+  var TAU=2*Math.PI, GAP=0.016;
+  var tot  = DATA.reduce(function(s,d){return s+d.w;},0);
+  var overall = DATA.reduce(function(s,d){return s+d.w*d.chg/tot;},0);
+
+  var out=[], a=-Math.PI/2;
+
+  // Donut segments
+  DATA.forEach(function(d) {
+    var sw = d.w/tot*TAU - GAP;
+    var a2 = a + sw;
+    var lg = sw > Math.PI ? 1 : 0;
+    var pt = function(r,ang){ return (cx+r*Math.cos(ang)).toFixed(1)+','+(cy+r*Math.sin(ang)).toFixed(1); };
+    out.push('<path d="M'+pt(ro,a)+' A'+ro+','+ro+' 0 '+lg+',1 '+pt(ro,a2)+
+             ' L'+pt(ri,a2)+' A'+ri+','+ri+' 0 '+lg+',0 '+pt(ri,a)+' Z"'+
+             ' fill="'+c(d.chg)+'" stroke="#0a1220" stroke-width="2">'+
+             '<title>'+d.abbr+': '+(d.chg>=0?'+':'')+d.chg.toFixed(2)+'% ('+d.n+' stocks)</title></path>');
+    a = a2 + GAP;
+  });
+
+  // Inner circle fill + center text
+  var os = overall>=0?'+':'';
+  out.push('<circle cx="'+cx+'" cy="'+cy+'" r="'+(ri-1)+'" fill="#080f1e"/>');
+  out.push('<text x="'+cx+'" y="'+(cy-16)+'" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8.5" fill="rgba(148,163,184,0.55)" letter-spacing=".07em">INDU by</text>');
+  out.push('<text x="'+cx+'" y="'+(cy-4)+'" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8.5" fill="rgba(148,163,184,0.55)" letter-spacing=".07em">GICS ('+DATA.length+')</text>');
+  out.push('<text x="'+cx+'" y="'+(cy+17)+'" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="17" font-weight="700" fill="'+(overall>=0?'#22c55e':'#ef4444')+'">'+os+overall.toFixed(2)+'%</text>');
+
+  // Divider
+  var tx=318;
+  out.push('<line x1="'+tx+'" y1="6" x2="'+tx+'" y2="'+(H-6)+'" stroke="rgba(255,255,255,0.06)" stroke-width="0.8"/>');
+
+  // Column headers
+  out.push('<text x="'+(tx+14)+'" y="20" font-family="JetBrains Mono,monospace" font-size="7" font-weight="700" fill="rgba(100,116,139,0.65)" letter-spacing=".12em">GICS SECTOR</text>');
+  out.push('<text x="735" y="20" text-anchor="end" font-family="JetBrains Mono,monospace" font-size="7" fill="rgba(100,116,139,0.65)" letter-spacing=".1em">1D CHG%</text>');
+  out.push('<line x1="'+tx+'" y1="25" x2="760" y2="25" stroke="rgba(255,255,255,0.05)" stroke-width="0.6"/>');
+
+  // Sector rows
+  DATA.forEach(function(d,i) {
+    var ry = 36 + i * 28;
+    var color = c(d.chg);
+    var sign  = d.chg >= 0 ? '+' : '';
+    var barW  = Math.round(d.w / 26 * 105);
+    // Left color bar accent
+    out.push('<rect x="'+tx+'" y="'+ry+'" width="3" height="19" rx="1" fill="'+color+'"/>');
+    // Weight bar (subtle, behind label)
+    out.push('<rect x="'+(tx+8)+'" y="'+(ry+8)+'" width="'+barW+'" height="2" rx="1" fill="'+color+'" opacity="0.22"/>');
+    // Sector name
+    out.push('<text x="'+(tx+10)+'" y="'+(ry+10)+'" font-family="JetBrains Mono,monospace" font-size="8.5" font-weight="700" fill="rgba(226,232,240,0.9)">'+d.abbr+'</text>');
+    // Sub-line: stock count + weight
+    out.push('<text x="'+(tx+10)+'" y="'+(ry+21)+'" font-family="JetBrains Mono,monospace" font-size="6.5" fill="rgba(100,116,139,0.7)">'+d.n+' STK · '+d.w+'% WT</text>');
+    // Change value
+    out.push('<text x="735" y="'+(ry+11)+'" text-anchor="end" font-family="JetBrains Mono,monospace" font-size="10" font-weight="700" fill="'+color+'">'+sign+d.chg.toFixed(2)+'%</text>');
+    // Row separator
+    if (i < DATA.length-1)
+      out.push('<line x1="'+(tx+8)+'" y1="'+(ry+26)+'" x2="755" y2="'+(ry+26)+'" stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>');
+  });
+
+  el.innerHTML = '<svg viewBox="0 0 '+W+' '+H+'" width="100%" height="'+H+'" xmlns="http://www.w3.org/2000/svg">'+out.join('')+'</svg>';
+  el.style.padding = '0';
+})();
+
+// Yield curve bars
+(function() {
+  var yields = [
+    {l:'1M',v:5.35},{l:'3M',v:5.22},{l:'6M',v:5.10},{l:'1Y',v:4.72},
+    {l:'2Y',v:4.31},{l:'3Y',v:4.22},{l:'5Y',v:4.18},{l:'7Y',v:4.24},
+    {l:'10Y',v:4.32},{l:'20Y',v:4.48},{l:'30Y',v:4.54},
+  ];
+  var mn = Math.min.apply(null, yields.map(function(y){return y.v;}));
+  var mx = Math.max.apply(null, yields.map(function(y){return y.v;}));
+  var html = yields.map(function(y){
+    var h = Math.round(((y.v-mn)/(mx-mn))*48+12);
+    return '<div class="ybar-wrap"><div class="yval">'+y.v.toFixed(2)+'</div><div class="ybar" style="height:'+h+'px;background:linear-gradient(to top,#14B8A6,#2563EB);opacity:.85;"></div><div class="ylbl">'+y.l+'</div></div>';
+  }).join('');
+  var el = document.getElementById('yield-bars');
+  if (el) el.innerHTML = html;
+})();
+
+// ── Hormuz satellite map (Leaflet + ESRI World Imagery) ──
+(function(){
+  if (typeof L === 'undefined') return;
+  var el = document.getElementById('hormuz-map');
+  if (!el) return;
+
+  var map = L.map('hormuz-map', {
+    center: [26.48, 56.38],
+    zoom: 8,
+    zoomControl: false,
+    attributionControl: true,
+    dragging: false,
+    scrollWheelZoom: false,
+    keyboard: false,
+    doubleClickZoom: false,
+    boxZoom: false,
+    touchZoom: false,
+  });
+
+  L.tileLayer(
+    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    { attribution: '&copy; Esri, Maxar, Earthstar Geographics', maxZoom: 18 }
+  ).addTo(map);
+
+  // Vessel markers — AIS-style
+  var VESSELS = [
+    { lat:26.596, lng:56.278, name:'GULF VENTURE',  status:'DETAINED',  flag:'IR', hdg:'090°', color:'#ef4444' },
+    { lat:26.510, lng:56.548, name:'HORMUZ STAR',   status:'AT ANCHOR', flag:'PA', hdg:'000°', color:'#f59e0b' },
+    { lat:26.385, lng:55.918, name:'AL JASRAH',     status:'DELAYED',   flag:'KW', hdg:'270°', color:'#f59e0b' },
+    { lat:26.648, lng:55.802, name:'PERSIAN TIDE',  status:'TRANSIT W', flag:'MT', hdg:'278°', color:'#22c55e' },
+    { lat:26.328, lng:56.712, name:'IRAN EXPRESS',  status:'TRANSIT E', flag:'IR', hdg:'092°', color:'#22c55e' },
+  ];
+
+  VESSELS.forEach(function(v) {
+    var icon = L.divIcon({
+      className: '',
+      html: '<div style="width:10px;height:10px;border-radius:50%;background:'+v.color+';'
+          + 'border:1.5px solid rgba(255,255,255,0.6);box-shadow:0 0 6px '+v.color+';"></div>',
+      iconSize: [10, 10],
+      iconAnchor: [5, 5],
+    });
+    L.marker([v.lat, v.lng], {icon: icon})
+      .bindTooltip(
+        '<b>' + v.name + '</b> &nbsp;<span style="color:' + v.color + '">' + v.status + '</span>'
+        + ' &nbsp;<span style="color:#64748b">HDG ' + v.hdg + ' · ' + v.flag + '</span>',
+        { className: 'hm-vessel-tip', direction: 'top', offset: [0, -6] }
+      )
+      .addTo(map);
+  });
+})();
+</script>
+</body>
+</html>
