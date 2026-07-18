@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node -e \":*)",
+      "Bash(node screenshot.mjs http://localhost:3000 final)",
+      "Bash(node screenshot.mjs http://localhost:3000/pages/jira-ai.html jira)",
+      "Bash(node screenshot.mjs http://localhost:3000/pages/ai-tools.html tools)",
+      "Bash(node screenshot.mjs http://localhost:3000/pages/ai-topics.html topics)",
+      "Skill(frontend-design)",
+      "Skill(frontend-design:*)",
+      "Bash(node screenshot.mjs http://localhost:3000/pages/ai-tools.html tabs)",
+      "Bash(python3 -c \":*)"
+    ]
+  }
+}

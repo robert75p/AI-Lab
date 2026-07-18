@@ -1,0 +1,20 @@
+# Dependencies
+node_modules/
+
+# Secrets — never commit real credentials
+.env
+
+# Recon output: dated run folders and their CSV/JSON outputs.
+# Keep the directory itself tracked via .gitkeep; ignore generated content.
+data/db_recon/????-??-??/
+
+# Python bytecode
+*.pyc
+__pycache__/
+
+# Puppeteer screenshots (generated artefacts)
+temporary screenshots/
+
+# OS
+.DS_Store
+Thumbs.db

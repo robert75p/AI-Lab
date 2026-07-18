@@ -1,0 +1,21 @@
+{
+  "name": "traba-labs",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "recon:daily": "python3 scripts/db_recon/run_daily_recon.py --config scripts/db_recon/db2_recon_config.yaml",
+    "recon:dry-run": "python3 scripts/db_recon/db2_extract.py --config scripts/db_recon/db2_recon_config.yaml --dry-run",
+    "recon:path": "python3 scripts/db_recon/run_daily_recon.py --config scripts/db_recon/db2_recon_config.yaml --print-path"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "@mediapipe/hands": "^0.4.1675469240",
+    "puppeteer": "^24.40.0",
+    "xlsx": "^0.18.5"
+  }
+}

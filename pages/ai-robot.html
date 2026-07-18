@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Robot — AI Labs</title>
+<script src="/vendor/tailwind.js"></script>
+<link rel="stylesheet" href="/vendor/fonts.css">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background-color: #0A1F44;
+  font-family: 'Inter', sans-serif;
+  color: #F1F5F9;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+body::after {
+  content: ''; position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none; z-index: 0; opacity: 0.5;
+}
+.ambient {
+  position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background:
+    radial-gradient(ellipse 60% 50% at 60% 10%, rgba(37,99,235,0.12) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at 20% 85%, rgba(56,189,248,0.08) 0%, transparent 55%);
+}
+.page-wrap { position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 0 32px; }
+
+.nav {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 24px 0; border-bottom: 1px solid rgba(37,99,235,0.12);
+}
+.back-link {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: 'JetBrains Mono', monospace; font-size: 11px;
+  letter-spacing: 0.08em; color: #38BDF8; text-decoration: none;
+  transition: gap 0.2s ease;
+}
+.back-link:hover { gap: 12px; }
+.nav-badge {
+  display: flex; align-items: center; gap: 6px; padding: 4px 10px;
+  border-radius: 999px; background: rgba(37,99,235,0.1); border: 1px solid rgba(37,99,235,0.2);
+  font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #38BDF8; letter-spacing: 0.06em;
+}
+.nav-dot { width: 6px; height: 6px; border-radius: 50%; background: #38BDF8; animation: pulse-dot 2s ease-in-out infinite; }
+
+.page-hero { padding: 48px 0 40px; }
+.page-tag { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.12em; color: hsl(196, 58%, 68%); margin-bottom: 16px; }
+.page-heading {
+  font-family: 'Poppins', sans-serif; font-weight: 800;
+  font-size: clamp(32px, 4vw, 52px); letter-spacing: -0.03em; line-height: 1.05;
+  background: linear-gradient(130deg, #F1F5F9 0%, #38BDF8 70%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text; margin-bottom: 16px;
+}
+.page-desc { font-size: 16px; line-height: 1.75; color: #9cabc2; max-width: 560px; }
+
+.main-grid { display: grid; grid-template-columns: 320px 1fr; gap: 20px; margin: 32px 0 40px; }
+
+/* Robot avatar panel */
+.robot-panel {
+  background: linear-gradient(140deg, rgba(30,41,59,0.9), rgba(10,31,68,0.95));
+  border: 1px solid rgba(37,99,235,0.2); border-radius: 12px; padding: 28px;
+  display: flex; flex-direction: column; align-items: center; text-align: center;
+}
+.robot-avatar {
+  width: 120px; height: 120px; border-radius: 50%;
+  background: linear-gradient(135deg, rgba(37,99,235,0.2), rgba(20,184,166,0.15));
+  border: 2px solid rgba(37,99,235,0.3);
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 20px; position: relative;
+  box-shadow: 0 0 32px rgba(37,99,235,0.2), 0 0 0 8px rgba(37,99,235,0.05);
+  animation: avatar-pulse 3s ease-in-out infinite;
+}
+@keyframes avatar-pulse {
+  0%,100% { box-shadow: 0 0 32px rgba(37,99,235,0.2), 0 0 0 8px rgba(37,99,235,0.05); }
+  50%      { box-shadow: 0 0 48px rgba(37,99,235,0.35), 0 0 0 12px rgba(37,99,235,0.08); }
+}
+.robot-name { font-family: 'Poppins', sans-serif; font-size: 18px; font-weight: 700; color: #F1F5F9; margin-bottom: 4px; }
+.robot-role { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #334155; letter-spacing: 0.08em; margin-bottom: 20px; }
+
+.skill-bar { width: 100%; margin-bottom: 10px; }
+.skill-label { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 11px; }
+.skill-name { color: #F1F5F9; }
+.skill-pct  { font-family: 'JetBrains Mono', monospace; color: #334155; }
+.skill-track { height: 4px; border-radius: 2px; background: rgba(37,99,235,0.12); }
+.skill-fill  { height: 100%; border-radius: 2px; }
+
+.status-row {
+  display: flex; gap: 12px; width: 100%; margin-top: 16px;
+  justify-content: center;
+}
+.status-chip {
+  padding: 4px 10px; border-radius: 999px; font-family: 'JetBrains Mono', monospace;
+  font-size: 9px; letter-spacing: 0.06em;
+}
+
+/* Task area */
+.task-area { display: flex; flex-direction: column; gap: 16px; }
+.task-panel {
+  background: linear-gradient(140deg, rgba(30,41,59,0.9), rgba(10,31,68,0.95));
+  border: 1px solid rgba(37,99,235,0.15); border-radius: 12px; padding: 22px;
+}
+.task-label {
+  font-family: 'JetBrains Mono', monospace; font-size: 10px;
+  letter-spacing: 0.1em; color: #38BDF8; margin-bottom: 16px;
+}
+.task-item {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 12px; border-radius: 8px;
+  background: rgba(10,31,68,0.6); border: 1px solid rgba(37,99,235,0.1);
+  margin-bottom: 8px;
+}
+.task-icon {
+  width: 28px; height: 28px; border-radius: 7px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px;
+}
+.task-body { flex: 1; }
+.task-title { font-size: 13px; font-weight: 500; color: #F1F5F9; margin-bottom: 3px; }
+.task-meta { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: #334155; }
+.task-progress { height: 2px; background: rgba(37,99,235,0.1); border-radius: 1px; margin-top: 8px; }
+.task-progress-fill { height: 100%; border-radius: 1px; }
+
+/* Chat input */
+.chat-input-area {
+  display: flex; gap: 10px; padding: 14px;
+  background: rgba(10,31,68,0.8); border: 1px solid rgba(37,99,235,0.2);
+  border-radius: 10px;
+}
+.chat-input {
+  flex: 1; background: transparent; border: none; outline: none;
+  font-family: 'Inter', sans-serif; font-size: 14px; color: #F1F5F9;
+}
+.chat-input::placeholder { color: #334155; }
+.chat-send {
+  padding: 8px 16px; border-radius: 7px;
+  background: rgba(37,99,235,0.15); border: 1px solid rgba(37,99,235,0.3);
+  font-family: 'JetBrains Mono', monospace; font-size: 10px;
+  color: #38BDF8; cursor: pointer; letter-spacing: 0.06em;
+  transition: background 0.2s ease;
+}
+.chat-send:hover { background: rgba(37,99,235,0.25); }
+
+@keyframes pulse-dot { 0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.3)} }
+@keyframes fade-up { from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)} }
+.fade-up { animation: fade-up 0.6s cubic-bezier(0.16,1,0.3,1) both; }
+.d1{animation-delay:.1s}.d2{animation-delay:.2s}
+
+/* Log stream */
+.log-stream {
+  font-family: 'JetBrains Mono', monospace; font-size: 11px; line-height: 1.8;
+  background: rgba(10,31,68,0.8); border-radius: 8px; padding: 14px;
+  max-height: 160px; overflow-y: auto;
+}
+.log-line { display: flex; gap: 10px; }
+.log-ts { color: #334155; flex-shrink: 0; }
+.log-msg { color: #38BDF8; }
+.log-ok  { color: #14B8A6; }
+.log-warn{ color: #F59E0B; }
+</style>
+</head>
+<body>
+<div class="ambient"></div>
+<div class="page-wrap">
+
+  <nav class="nav">
+    <a href="../index.html" class="back-link">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+      BACK TO LABS
+    </a>
+    <div class="nav-badge"><div class="nav-dot"></div>AI ROBOT MODULE</div>
+  </nav>
+
+  <div class="page-hero fade-up">
+    <div class="page-tag">MODULE 03 / AI ROBOT — SKILL CLONING</div>
+    <h1 class="page-heading">Your Digital Clone,<br>Ready to Execute</h1>
+    <p class="page-desc">Train an AI agent on your expertise, workflows, and decision patterns. Deploy it to autonomously handle tasks with your knowledge and style.</p>
+  </div>
+
+  <div class="main-grid fade-up d1">
+
+    <!-- Robot Profile -->
+    <div class="robot-panel">
+      <div class="robot-avatar">
+        <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="11" width="18" height="10" rx="2"/>
+          <circle cx="12" cy="6" r="2.5"/>
+          <line x1="12" y1="8.5" x2="12" y2="11"/>
+          <line x1="7" y1="11" x2="7" y2="13"/>
+          <line x1="17" y1="11" x2="17" y2="13"/>
+          <circle cx="9"  cy="15" r="1.5" fill="#38BDF8" stroke="none"/>
+          <circle cx="15" cy="15" r="1.5" fill="#38BDF8" stroke="none"/>
+          <path d="M9 19h6"/>
+        </svg>
+      </div>
+      <div class="robot-name">AI Clone v2.4</div>
+      <div class="robot-role">SKILL REPLICA · READY</div>
+
+      <div style="width:100%;border-top:1px solid rgba(37,99,235,0.12);padding-top:16px;">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:0.1em;color:#334155;margin-bottom:14px;">CLONED SKILL PROFILE</div>
+
+        <div class="skill-bar">
+          <div class="skill-label"><span class="skill-name">Data Analysis</span><span class="skill-pct">94%</span></div>
+          <div class="skill-track"><div class="skill-fill" style="width:94%;background:linear-gradient(90deg,#2563EB,#38BDF8);"></div></div>
+        </div>
+        <div class="skill-bar">
+          <div class="skill-label"><span class="skill-name">Report Writing</span><span class="skill-pct">87%</span></div>
+          <div class="skill-track"><div class="skill-fill" style="width:87%;background:linear-gradient(90deg,#14B8A6,#38BDF8);"></div></div>
+        </div>
+        <div class="skill-bar">
+          <div class="skill-label"><span class="skill-name">FIX Protocol</span><span class="skill-pct">91%</span></div>
+          <div class="skill-track"><div class="skill-fill" style="width:91%;background:linear-gradient(90deg,#2563EB,#14B8A6);"></div></div>
+        </div>
+        <div class="skill-bar">
+          <div class="skill-label"><span class="skill-name">Sprint Planning</span><span class="skill-pct">82%</span></div>
+          <div class="skill-track"><div class="skill-fill" style="width:82%;background:linear-gradient(90deg,#38BDF8,#14B8A6);"></div></div>
+        </div>
+        <div class="skill-bar">
+          <div class="skill-label"><span class="skill-name">Risk Assessment</span><span class="skill-pct">79%</span></div>
+          <div class="skill-track"><div class="skill-fill" style="width:79%;background:linear-gradient(90deg,#2563EB,#38BDF8);"></div></div>
+        </div>
+      </div>
+
+      <div class="status-row">
+        <div class="status-chip" style="background:rgba(20,184,166,0.1);border:1px solid rgba(20,184,166,0.25);color:#14B8A6;">● ACTIVE</div>
+        <div class="status-chip" style="background:rgba(37,99,235,0.1);border:1px solid rgba(37,99,235,0.25);color:#38BDF8;">LEARNING</div>
+      </div>
+    </div>
+
+    <!-- Task Execution Area -->
+    <div class="task-area">
+
+      <!-- Active Tasks -->
+      <div class="task-panel">
+        <div class="task-label">EXECUTING TASKS</div>
+
+        <div class="task-item">
+          <div class="task-icon" style="background:rgba(37,99,235,0.15);">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          </div>
+          <div class="task-body">
+            <div class="task-title">Analyse Q1 trading volume anomalies</div>
+            <div class="task-meta">STARTED 4m AGO · ESTIMATED 12m</div>
+            <div class="task-progress"><div class="task-progress-fill" style="width:35%;background:linear-gradient(90deg,#2563EB,#38BDF8);"></div></div>
+          </div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#38BDF8;flex-shrink:0;">35%</div>
+        </div>
+
+        <div class="task-item">
+          <div class="task-icon" style="background:rgba(20,184,166,0.15);">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#14B8A6" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg>
+          </div>
+          <div class="task-body">
+            <div class="task-title">Draft sprint retrospective for TRAB-Sprint-12</div>
+            <div class="task-meta">QUEUED · PENDING TASK 1</div>
+            <div class="task-progress"><div class="task-progress-fill" style="width:0%;background:#14B8A6;"></div></div>
+          </div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#334155;flex-shrink:0;">QUEUED</div>
+        </div>
+
+        <div class="task-item" style="opacity:0.55;">
+          <div class="task-icon" style="background:rgba(37,99,235,0.1);">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#334155" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div class="task-body">
+            <div class="task-title">FIX tag 35 classification report</div>
+            <div class="task-meta">COMPLETED 22m AGO</div>
+          </div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#14B8A6;flex-shrink:0;">DONE ✓</div>
+        </div>
+      </div>
+
+      <!-- Activity Log -->
+      <div class="task-panel">
+        <div class="task-label">ACTIVITY LOG</div>
+        <div class="log-stream">
+          <div class="log-line"><span class="log-ts">09:41:12</span><span class="log-ok">[INIT] Skill profile loaded — 5 domains, confidence 89%</span></div>
+          <div class="log-line"><span class="log-ts">09:41:14</span><span class="log-msg">[TASK] Starting anomaly analysis on Q1 dataset (4.2M rows)</span></div>
+          <div class="log-line"><span class="log-ts">09:41:19</span><span class="log-msg">[PROC] Running Z-score outlier detection...</span></div>
+          <div class="log-line"><span class="log-ts">09:42:03</span><span class="log-warn">[WARN] 3 anomalies flagged in EURUSD pair — reviewing</span></div>
+          <div class="log-line"><span class="log-ts">09:43:07</span><span class="log-msg">[ML]   Applying pattern matching from skill memory...</span></div>
+          <div class="log-line"><span class="log-ts">09:44:51</span><span class="log-ok">[DONE] FIX tag report exported to /reports/fix-35-q1.pdf</span></div>
+          <div class="log-line"><span class="log-ts">09:45:22</span><span class="log-msg">[TASK] Anomaly analysis 35% complete...</span></div>
+        </div>
+      </div>
+
+      <!-- Assign new task -->
+      <div class="chat-input-area">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#334155" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input class="chat-input" type="text" placeholder="Assign a task to your AI clone — e.g. 'Summarise JIRA board for this week'..." />
+        <button class="chat-send">ASSIGN →</button>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

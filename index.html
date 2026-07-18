@@ -1,0 +1,1135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Everything that matters — AI Lab</title>
+<script src="/vendor/tailwind.js"></script>
+<link rel="stylesheet" href="/vendor/fonts.css">
+
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          navy:     '#0A1F44',
+          electric: '#2563EB',
+          indigo:   '#1E293B',
+          sky:      '#38BDF8',
+          teal:     '#14B8A6',
+          mist:     '#F1F5F9',
+          slate:    '#334155',
+          rim:      '#E2E8F0',
+        }
+      }
+    }
+  }
+</script>
+
+<style>
+/* ── Reset & base ─────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background-color: #0A1F44;
+  font-family: 'Inter', sans-serif;
+  color: #F1F5F9;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+/* ── Noise texture ──────────────────────────────────────────── */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.5;
+}
+
+/* ── Ambient gradients ─────────────────────────────────────── */
+.ambient {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(ellipse 70% 50% at 88% 2%,  rgba(37,99,235,0.13)  0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 5%  95%,  rgba(20,184,166,0.08) 0%, transparent 55%),
+    radial-gradient(ellipse 50% 60% at 50% 50%,  rgba(30,41,59,0.25)   0%, transparent 80%);
+}
+
+/* ── Layout ────────────────────────────────────────────────── */
+.page-wrap {
+  position: relative;
+  z-index: 1;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 32px;
+}
+
+/* ── Section: Hero ─────────────────────────────────────────── */
+.hero-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 48px;
+  min-height: 480px;
+  padding: 56px 0 32px;
+}
+
+/* ── Banner ─────────────────────────────────────────────────── */
+.banner-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: rgba(30,41,59,0.85);
+  border: 1px solid rgba(37,99,235,0.28);
+  margin-bottom: 24px;
+}
+
+.badge-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: #14B8A6;
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+.banner-heading {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 800;
+  font-size: clamp(40px, 10vw, 50px);
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  background: linear-gradient(130deg, #F1F5F9 0%, #38BDF8 55%, #14B8A6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 14px;
+}
+
+.banner-sub {
+  font-family: 'Poppins', sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  color: #38BDF8;
+  letter-spacing: -0.01em;
+  margin-bottom: 16px;
+}
+
+.banner-desc {
+  font-size: 15px;
+  line-height: 1.75;
+  color: hsl(215, 24%, 75%);
+  max-width: 400px;
+  margin-bottom: 32px;
+}
+
+.stats-row {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+}
+
+.stat-divider {
+  width: 1px; height: 32px;
+  background: rgba(37,99,235,0.2);
+}
+
+.stat-val {
+  font-family: 'Poppins', sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: #F1F5F9;
+  letter-spacing: -0.03em;
+}
+
+.stat-lbl {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: lab(71.61% -0.82 -2.03);
+  margin-top: 2px;
+  letter-spacing: 0.06em;
+}
+
+/* ── Globe ─────────────────────────────────────────────────── */
+.globe-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.globe-glow {
+  position: absolute;
+  inset: -40px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(37,99,235,0.14) 0%, transparent 70%);
+  filter: blur(40px);
+  pointer-events: none;
+}
+
+#globe-canvas {
+  cursor: grab;
+  position: relative;
+  z-index: 1;
+  display: block;
+}
+#globe-canvas:active { cursor: grabbing; }
+
+.globe-legend {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  z-index: 2;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.04em;
+}
+
+.legend-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+}
+
+/* ── Section: Clocks ────────────────────────────────────────── */
+.clocks-section {
+  padding: 16px 0 32px;
+}
+
+.clocks-row {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+}
+
+.clock-card {
+  flex: 1;
+  max-width: 230px;
+  padding: 24px;
+  border-radius: 16px;
+  background: linear-gradient(140deg, rgba(30,41,59,0.92), rgba(10,31,68,0.96));
+  border: 1px solid rgba(37,99,235,0.18);
+  box-shadow:
+    0 4px 24px rgba(37,99,235,0.08),
+    0 1px 4px rgba(0,0,0,0.32),
+    inset 0 1px 0 rgba(255,255,255,0.04);
+  transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s ease;
+}
+
+.clock-card:hover {
+  transform: translateY(-5px);
+  box-shadow:
+    0 14px 36px rgba(37,99,235,0.18),
+    0 4px 8px rgba(0,0,0,0.3),
+    inset 0 1px 0 rgba(255,255,255,0.05);
+}
+
+.clock-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.clock-city {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  margin-bottom: 3px;
+}
+
+.clock-tz {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  color: hsl(215, 9%, 46%);
+}
+
+.clock-status {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+.clock-face-wrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.clock-time {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 22px;
+  font-weight: 500;
+  color: #F1F5F9;
+  letter-spacing: -0.02em;
+  text-align: center;
+}
+
+.clock-date {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  color: hsl(216, 14%, 51%);
+  text-align: center;
+  margin-top: 4px;
+  letter-spacing: 0.05em;
+}
+
+/* ── Section: Search ────────────────────────────────────────── */
+.search-section {
+  padding: 8px 0 32px;
+  display: flex;
+  justify-content: center;
+}
+
+.search-wrap {
+  width: 100%;
+  max-width: 680px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 20px;
+  border-radius: 12px;
+  background: linear-gradient(140deg, rgba(30,41,59,0.92), rgba(10,31,68,0.96));
+  border: 1px solid rgba(37,99,235,0.22);
+  box-shadow: 0 4px 24px rgba(37,99,235,0.06), 0 1px 3px rgba(0,0,0,0.3);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.search-wrap:focus-within {
+  border-color: rgba(37,99,235,0.55);
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.12), 0 4px 24px rgba(37,99,235,0.12);
+}
+
+.search-icon { flex-shrink: 0; color: #334155; }
+
+.search-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-family: 'Inter', sans-serif;
+  font-size: 15px;
+  color: #F1F5F9;
+}
+
+.search-input::placeholder { color: hwb(220 60% 39%); }
+
+.search-hints {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.kbd {
+  padding: 2px 6px;
+  border-radius: 5px;
+  background: rgba(37,99,235,0.1);
+  border: 1px solid rgba(37,99,235,0.2);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: #334155;
+}
+
+/* ── Section: Tiles ─────────────────────────────────────────── */
+.tiles-section {
+  padding: 0 0 64px;
+}
+
+.tiles-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: hsl(215, 40%, 56%);
+  margin-bottom: 20px;
+}
+
+.tiles-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 900px) {
+  .tiles-grid { grid-template-columns: repeat(2, 1fr); }
+  .hero-section { flex-direction: column; min-height: auto; padding: 40px 0 24px; }
+  .globe-wrap { display: none; }
+  .clocks-row { flex-direction: column; align-items: center; }
+}
+
+@media (max-width: 600px) {
+  .tiles-grid { grid-template-columns: 1fr; }
+  .page-wrap { padding: 0 20px; }
+}
+
+.tile-card {
+  display: block;
+  text-decoration: none;
+  padding: 24px;
+  border-radius: 12px;
+  background: linear-gradient(140deg, rgba(30,41,59,0.85), rgba(10,31,68,0.92));
+  border: 1px solid rgba(37,99,235,0.13);
+  box-shadow:
+    0 4px 16px rgba(0,0,0,0.22),
+    0 1px 3px rgba(0,0,0,0.3),
+    inset 0 1px 0 rgba(255,255,255,0.035);
+  transition:
+    transform 0.3s cubic-bezier(0.34,1.56,0.64,1),
+    box-shadow 0.3s ease,
+    border-color 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.tile-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 0%, rgba(37,99,235,0.07) 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.tile-card:hover {
+  transform: translateY(-6px) scale(1.015);
+  border-color: rgba(37,99,235,0.45);
+  box-shadow:
+    0 18px 44px rgba(37,99,235,0.18),
+    0 4px 12px rgba(0,0,0,0.28),
+    inset 0 1px 0 rgba(255,255,255,0.06);
+}
+
+.tile-card:hover::before { opacity: 1; }
+
+.tile-card:active {
+  transform: translateY(-2px) scale(1.005);
+}
+
+.tile-card:focus-visible {
+  outline: 2px solid #2563EB;
+  outline-offset: 3px;
+}
+
+.tile-icon {
+  width: 46px; height: 46px;
+  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(37,99,235,0.18), rgba(20,184,166,0.12));
+  border: 1px solid rgba(37,99,235,0.18);
+  box-shadow: 0 2px 8px rgba(37,99,235,0.12);
+  margin-bottom: 16px;
+  transition: box-shadow 0.3s ease;
+}
+
+.tile-card:hover .tile-icon {
+  box-shadow: 0 4px 18px rgba(37,99,235,0.3);
+}
+
+.tile-title {
+  font-family: 'Poppins', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: #F1F5F9;
+  letter-spacing: -0.02em;
+  margin-bottom: 8px;
+}
+
+.tile-desc {
+  font-size: 13px;
+  line-height: 1.75;
+  color: hsl(216, 23%, 66%);
+}
+
+.tile-cta {
+  margin-top: 16px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: gap 0.2s ease;
+}
+
+.tile-card:hover .tile-cta { gap: 8px; }
+
+/* ── Animations ─────────────────────────────────────────────── */
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.55; transform: scale(1.25); }
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(22px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.fade-up   { animation: fade-up 0.7s cubic-bezier(0.16,1,0.3,1) both; }
+.delay-100 { animation-delay: 0.1s; }
+.delay-200 { animation-delay: 0.2s; }
+.delay-300 { animation-delay: 0.3s; }
+.delay-400 { animation-delay: 0.4s; }
+.delay-500 { animation-delay: 0.5s; }
+</style>
+</head>
+
+<body>
+<div class="ambient"></div>
+
+<div class="page-wrap">
+
+  <!-- ═══════════════════════════════════════════════════════
+       SECTION 1 — BANNER (left) + HERO GLOBE (top-right)
+  ════════════════════════════════════════════════════════ -->
+  <section class="hero-section">
+
+    <!-- LEFT: Banner -->
+    <div class="fade-up" style="flex:1; max-width:520px;">
+      <div class="banner-badge">
+        <span class="badge-dot"></span>
+        <span style="font-family:'JetBrains Monocd',monospace; font-size:11px; color:#38BDF8; letter-spacing:0.08em;">AI SYSTEMS ONLINE</span>
+      </div>
+
+      <h1 class="banner-heading">
+        Applied<br>Intelligence Lab<span style="-webkit-text-fill-color:#2563EB;">.</span>
+      </h1>
+
+      <p class="banner-sub">AI Labs</p>
+
+      <p class="banner-desc">
+        Advanced AI tools designed for speed, accuracy, and scale. Intelligent automation, knowledge graphs, and pattern detection — all in one place for TRA-BA-EU.
+      </p>
+
+      <div class="stats-row">
+        <div>
+          <div class="stat-val">5+</div>
+          <div class="stat-lbl">AI TOOLS</div>
+        </div>
+        <div class="stat-divider"></div>
+        <div>
+          <div class="stat-val">3</div>
+          <div class="stat-lbl">GLOBAL HUBS</div>
+        </div>
+        <div class="stat-divider"></div>
+        <div>
+          <div class="stat-val">24/7</div>
+          <div class="stat-lbl">AVAILABILITY</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Interactive Globe Hero -->
+    <div class="globe-wrap fade-up delay-200">
+      <div class="globe-glow"></div>
+      <canvas id="globe-canvas" width="400" height="400" style="width:400px;height:400px;"></canvas>
+      <div class="globe-legend">
+        <div class="legend-item">
+          <div class="legend-dot" style="background:hsl(0, 0%, 100%);"></div>
+          <span style="color:hsl(0, 0%, 96%);">Applications</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background:hsl(41, 94%, 43%);"></div>
+          <span style="color:hwb(33 32% 9%);">Engines</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background:hsl(300, 86%, 49%);"></div>
+          <span style="color:hsl(288, 89%, 79%);">Exchanges</span>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════
+       SECTION 2 — 3 CLOCKS
+  ════════════════════════════════════════════════════════ -->
+  <section class="clocks-section fade-up delay-300">
+    <div class="clocks-row">
+
+      <!-- NY Clock -->
+      <div class="clock-card">
+        <div class="clock-header">
+          <div>
+            <div class="clock-city" style="color:#38BDF8;">NEW YORK</div>
+            <div class="clock-tz">America/New_York</div>
+          </div>
+          <div class="clock-status" style="background:#38BDF8;"></div>
+        </div>
+        <div class="clock-face-wrap">
+          <svg id="clock-ny-svg" width="110" height="110" viewBox="0 0 110 110">
+            <!-- bg -->
+            <circle cx="55" cy="55" r="50" fill="rgba(10,31,68,0.85)" stroke="rgba(56,189,248,0.2)" stroke-width="1.5"/>
+            <!-- outer ring glow -->
+            <circle cx="55" cy="55" r="50" fill="none" stroke="rgba(56,189,248,0.06)" stroke-width="8"/>
+            <!-- tick marks generated by JS -->
+            <g id="ny-ticks"></g>
+            <!-- hands -->
+            <line id="ny-h" x1="55" y1="55" x2="55" y2="33" stroke="#F1F5F9"  stroke-width="3.5" stroke-linecap="round"/>
+            <line id="ny-m" x1="55" y1="55" x2="55" y2="22" stroke="#38BDF8"  stroke-width="2"   stroke-linecap="round"/>
+            <line id="ny-s" x1="55" y1="60" x2="55" y2="18" stroke="#2563EB"  stroke-width="1.2" stroke-linecap="round"/>
+            <circle cx="55" cy="55" r="4" fill="#38BDF8"/>
+            <circle cx="55" cy="55" r="2" fill="#0A1F44"/>
+          </svg>
+        </div>
+        <div class="clock-time" id="ny-time">--:--:--</div>
+        <div class="clock-date" id="ny-date">--- -- ----</div>
+      </div>
+
+      <!-- London Clock -->
+      <div class="clock-card">
+        <div class="clock-header">
+          <div>
+            <div class="clock-city" style="color:#14B8A6;">LONDON</div>
+            <div class="clock-tz">Europe/London</div>
+          </div>
+          <div class="clock-status" style="background:#14B8A6; animation-delay:0.4s;"></div>
+        </div>
+        <div class="clock-face-wrap">
+          <svg id="clock-lon-svg" width="110" height="110" viewBox="0 0 110 110">
+            <circle cx="55" cy="55" r="50" fill="rgba(10,31,68,0.85)" stroke="rgba(20,184,166,0.2)" stroke-width="1.5"/>
+            <circle cx="55" cy="55" r="50" fill="none" stroke="rgba(20,184,166,0.06)" stroke-width="8"/>
+            <g id="lon-ticks"></g>
+            <line id="lon-h" x1="55" y1="55" x2="55" y2="33" stroke="#F1F5F9"  stroke-width="3.5" stroke-linecap="round"/>
+            <line id="lon-m" x1="55" y1="55" x2="55" y2="22" stroke="#14B8A6"  stroke-width="2"   stroke-linecap="round"/>
+            <line id="lon-s" x1="55" y1="60" x2="55" y2="18" stroke="#14B8A6"  stroke-width="1.2" stroke-linecap="round" opacity="0.75"/>
+            <circle cx="55" cy="55" r="4" fill="#14B8A6"/>
+            <circle cx="55" cy="55" r="2" fill="#0A1F44"/>
+          </svg>
+        </div>
+        <div class="clock-time" id="lon-time">--:--:--</div>
+        <div class="clock-date" id="lon-date">--- -- ----</div>
+      </div>
+
+      <!-- HK Clock -->
+      <div class="clock-card">
+        <div class="clock-header">
+          <div>
+            <div class="clock-city" style="color:#38BDF8;">HONG KONG</div>
+            <div class="clock-tz">Asia/Hong_Kong</div>
+          </div>
+          <div class="clock-status" style="background:#2563EB; animation-delay:0.8s;"></div>
+        </div>
+        <div class="clock-face-wrap">
+          <svg id="clock-hk-svg" width="110" height="110" viewBox="0 0 110 110">
+            <circle cx="55" cy="55" r="50" fill="rgba(10,31,68,0.85)" stroke="rgba(37,99,235,0.2)" stroke-width="1.5"/>
+            <circle cx="55" cy="55" r="50" fill="none" stroke="rgba(37,99,235,0.06)" stroke-width="8"/>
+            <g id="hk-ticks"></g>
+            <line id="hk-h" x1="55" y1="55" x2="55" y2="33" stroke="#F1F5F9"  stroke-width="3.5" stroke-linecap="round"/>
+            <line id="hk-m" x1="55" y1="55" x2="55" y2="22" stroke="#38BDF8"  stroke-width="2"   stroke-linecap="round"/>
+            <line id="hk-s" x1="55" y1="60" x2="55" y2="18" stroke="#2563EB"  stroke-width="1.2" stroke-linecap="round"/>
+            <circle cx="55" cy="55" r="4" fill="#2563EB"/>
+            <circle cx="55" cy="55" r="2" fill="#0A1F44"/>
+          </svg>
+        </div>
+        <div class="clock-time" id="hk-time">--:--:--</div>
+        <div class="clock-date" id="hk-date">--- -- ----</div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════
+       SECTION 3 — SEARCH
+  ════════════════════════════════════════════════════════ -->
+  <section class="search-section fade-up delay-400">
+    <div class="search-wrap">
+      <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input
+        class="search-input"
+        id="main-search"
+        type="text"
+        placeholder="Search AI tools, data linkage, patterns, Booking models..."
+        autocomplete="off"
+      />
+      <div class="search-hints">
+        <span class="kbd">⌘</span>
+        <span class="kbd">K</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════
+       SECTION 4 — TILES
+  ════════════════════════════════════════════════════════ -->
+  <section class="tiles-section fade-up delay-500">
+    <div class="tiles-label">AI TOOLS &amp; MODULES</div>
+    <div class="tiles-grid">
+
+      <!-- Tile 1: JIRA AI Automation -->
+      <a href="pages/jira-ai.html" class="tile-card">
+        <div class="tile-icon">
+          <!-- Kanban/sprint icon -->
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+               stroke="#38BDF8" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7" rx="1"/>
+            <rect x="14" y="3" width="7" height="7" rx="1"/>
+            <rect x="3" y="14" width="7" height="7" rx="1"/>
+            <path d="M17 17h.01M14 20h7M14 17h3"/>
+          </svg>
+        </div>
+        <div class="tile-title">JIRA AI Automation</div>
+        <div class="tile-desc">Advanced planning, progress tracking and a capacity driver powered by intelligent automation.</div>
+        <div class="tile-cta" style="color:#38BDF8;">
+          EXPLORE <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </div>
+      </a>
+
+      <!-- Tile 2: AI Topics -->
+      <a href="pages/ai-topics.html" class="tile-card">
+        <div class="tile-icon">
+          <!-- Knowledge graph icon -->
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+               stroke="#14B8A6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="2.5"/>
+            <circle cx="5"  cy="5"  r="2"/>
+            <circle cx="19" cy="5"  r="2"/>
+            <circle cx="5"  cy="19" r="2"/>
+            <circle cx="19" cy="19" r="2"/>
+            <line x1="7" y1="6.5" x2="10.3" y2="10.3"/>
+            <line x1="17" y1="6.5" x2="13.7" y2="10.3"/>
+            <line x1="7" y1="17.5" x2="10.3" y2="13.7"/>
+            <line x1="17" y1="17.5" x2="13.7" y2="13.7"/>
+          </svg>
+        </div>
+        <div class="tile-title">AI Topics</div>
+        <div class="tile-desc">Explore complex topics using Knowledge Graph — map relationships, discover insights, and navigate interconnected concepts.</div>
+        <div class="tile-cta" style="color:#14B8A6;">
+          EXPLORE <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </div>
+      </a>
+
+      <!-- Tile 3: AI Robot -->
+      <a href="pages/ai-robot.html" class="tile-card">
+        <div class="tile-icon">
+          <!-- Robot icon -->
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+               stroke="#38BDF8" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="10" rx="2"/>
+            <circle cx="12" cy="6" r="2.5"/>
+            <line x1="12" y1="8.5" x2="12" y2="11"/>
+            <line x1="7" y1="11" x2="7" y2="13"/>
+            <line x1="17" y1="11" x2="17" y2="13"/>
+            <circle cx="9"  cy="15" r="1.2" fill="#38BDF8" stroke="none"/>
+            <circle cx="15" cy="15" r="1.2" fill="#38BDF8" stroke="none"/>
+            <path d="M9 19h6"/>
+          </svg>
+        </div>
+        <div class="tile-title">AI Robot</div>
+        <div class="tile-desc">Clone your skills and execute tasks autonomously — build a digital replica that works with your knowledge and expertise.</div>
+        <div class="tile-cta" style="color:#38BDF8;">
+          EXPLORE <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </div>
+      </a>
+
+      <!-- Tile 4: AI Pattern Detection -->
+      <a href="pages/ai-pattern.html" class="tile-card">
+        <div class="tile-icon">
+          <!-- Signal/waveform icon -->
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+               stroke="#2563EB" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="2 12 5 12 7 5 9 19 11 9 13 15 15 12 17 12 19 7 21 12"/>
+          </svg>
+        </div>
+        <div class="tile-title">AI Pattern Detection</div>
+        <div class="tile-desc">Identify any possible correlation and linkage across datasets — surface hidden patterns and predictive signals.</div>
+        <div class="tile-cta" style="color:#38BDF8;">
+          EXPLORE <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </div>
+      </a>
+
+      <!-- Tile 5: AI Tools -->
+      <a href="pages/ai-tools.html" class="tile-card">
+        <div class="tile-icon">
+          <!-- Wrench/tools icon -->
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+               stroke="#14B8A6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/>
+          </svg>
+        </div>
+        <div class="tile-title">AI Tools</div>
+        <div class="tile-desc">JSON Builder, custom diagram builder, and FIX tag lookup values in ATHENA — essential utilities for AI-powered workflows.</div>
+        <div class="tile-cta" style="color:#14B8A6;">
+          EXPLORE <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </div>
+      </a>
+
+      <!-- Tile 6: Market Intelligence -->
+      <a href="pages/market-intelligence.html" class="tile-card">
+        <div class="tile-icon" style="background:linear-gradient(135deg,rgba(37,99,235,0.22),rgba(56,189,248,0.14));border-color:rgba(37,99,235,0.25);">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+               stroke="#38BDF8" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/>
+            <polyline points="16 7 22 7 22 13"/>
+          </svg>
+        </div>
+        <div class="tile-title">Market Intelligence</div>
+        <div class="tile-desc">Macro sentiment, global indices, FX rates, yield curves, and AI-generated signals — your custom Launchpad.</div>
+        <div class="tile-cta" style="color:#38BDF8;">
+          EXPLORE <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </div>
+      </a>
+
+    </div>
+  </section>
+
+</div><!-- /page-wrap -->
+
+
+<script>
+/* ═══════════════════════════════════════════════════════════
+   GLOBE COMPONENT
+════════════════════════════════════════════════════════════ */
+(function () {
+  const canvas = document.getElementById('globe-canvas');
+  const ctx = canvas.getContext('2d');
+  const W = 400, H = 400, CX = 200, CY = 200;
+  const RADIUS = 148, FOV = 600;
+
+  const DPR = window.devicePixelRatio || 1;
+  canvas.width  = W * DPR;
+  canvas.height = H * DPR;
+  ctx.scale(DPR, DPR);
+
+  let rotY = 0.5, rotX = 0.18;
+  let time = 0;
+  const AUTO_SPEED = 0.0025;
+  let drag = { active: false, sx: 0, sy: 0, ry: 0, rx: 0 };
+
+  // Key cities
+  const MARKERS = [
+    { lat: 40.71, lng: -74.01, label: 'CARBON',    col: 'rgba(255,255,255,1)' },
+    { lat: 30.71, lng: -34.01, label: 'CSOM',    col: 'rgba(255,255,255,1)' },
+    { lat: 21.51, lng: -0.13,  label: 'JUPITER',    col: 'rgba(255,255,255,1)' },
+    { lat: 15.51, lng: -20.13,  label: 'RATESALGO',    col: 'rgba(255,255,222,1)' },
+    { lat: -15.51, lng: -20.13,  label: 'CD-RAZER',    col: 'rgba(255,255,222,1)' },
+    { lat: 51.51, lng: -0.13,  label: 'XMAN',    col: 'rgba(255,178,102,1)' },
+    { lat: -51.51, lng: -0.13,  label: 'MSTX',    col: 'rgba(255,178,102,1)' },
+    { lat: 22.32, lng: 114.17, label: 'mvea',        col: 'rgba(255,178,102,1)'  },
+    { lat: 35.68, lng: 139.69, label: 'IEDALGO',     col: 'rgba(255,178,102,1)' },
+    { lat: 1.35,  lng: 103.82, label: 'RBE_PREBCHMK', col: 'rgba(255,178,102,1)' },
+    { lat: 38.86, lng: 12.35,   label: 'LSE',     col: 'rgba(255,160,222,0.5)' },
+    { lat: 19.43, lng: -99.13, label: 'EUREX',    col: 'rgba(255,160,222,0.5)' },
+    { lat: -33.87,lng: 151.21, label: 'NSDQ',    col: 'rgba(255,160,222,0.45)' },
+    { lat: -23.87,lng: 111.21, label: 'LIFFP',    col: 'rgba(255,160,222,0.45)' },
+    { lat: -5.51, lng: -140.13,  label: 'KENDA',    col: 'rgba(255,255,222,1)' },
+    { lat: -0.51, lng: -10.13,  label: 'PT',    col: 'rgba(255,255,222,1)' },
+    { lat: -0.51, lng: -100.13,  label: 'VSORT',    col: 'rgba(255,178,102,1)' },
+  ];
+
+  const CONNS = [
+    [[-15.51,-20.13],[1.35,103.82]],
+    [[40.71,-74.01],[51.51,-0.13]],
+    [[51.51,-0.13],[22.32,114.17]],
+    [[40.71,-74.01],[1.35,103.82]],
+    [[22.32,114.17],[35.68,139.69]],
+    [[51.51,-0.13],[48.86,2.35]],
+    [[40.71,-74.01],[19.43,-99.13]],
+    [[22.32,114.17],[1.35,103.82]],
+    [[-0.51,10.13],[-0.51,-100.13]],
+    [[-0.51,-100.13],[-23.87,111.21]],
+    [[40.71,-74.01],[-51.51,-0.13]],
+  ];
+
+  // Fibonacci sphere dots
+  const DOTS = [];
+  const G = (1 + Math.sqrt(5)) / 2;
+  for (let i = 0; i < 1100; i++) {
+    const t = (2 * Math.PI * i) / G;
+    const p = Math.acos(1 - (2 * (i + 0.5)) / 1100);
+    DOTS.push([Math.cos(t)*Math.sin(p), Math.cos(p), Math.sin(t)*Math.sin(p)]);
+  }
+
+  function ll2xyz(lat, lng, r) {
+    const phi = ((90 - lat) * Math.PI) / 180;
+    const th  = ((lng + 180) * Math.PI) / 180;
+    return [-(r*Math.sin(phi)*Math.cos(th)), r*Math.cos(phi), r*Math.sin(phi)*Math.sin(th)];
+  }
+
+  function ry3(x, y, z, a) {
+    const c=Math.cos(a), s=Math.sin(a);
+    return [x*c+z*s, y, -x*s+z*c];
+  }
+  function rx3(x, y, z, a) {
+    const c=Math.cos(a), s=Math.sin(a);
+    return [x, y*c-z*s, y*s+z*c];
+  }
+  function proj(x, y, z) {
+    const sc = FOV / (FOV + z);
+    return [x*sc + CX, y*sc + CY];
+  }
+
+  function applyRot(x, y, z) {
+    [x,y,z] = rx3(x,y,z, rotX);
+    [x,y,z] = ry3(x,y,z, rotY);
+    return [x,y,z];
+  }
+
+  function draw() {
+    if (!drag.active) rotY += AUTO_SPEED;
+    time += 0.014;
+
+    ctx.clearRect(0, 0, W, H);
+
+    // Ambient globe glow
+    const grd = ctx.createRadialGradient(CX, CY, RADIUS*0.5, CX, CY, RADIUS*1.55);
+    grd.addColorStop(0, 'rgba(37,99,235,0.04)');
+    grd.addColorStop(1, 'rgba(37,99,235,0)');
+    ctx.fillStyle = grd;
+    ctx.fillRect(0, 0, W, H);
+
+    // Globe outline
+    ctx.beginPath();
+    // Globe outer ring (visible)
+    ctx.beginPath();
+    ctx.arc(CX, CY, RADIUS, 0, Math.PI*2);
+    ctx.strokeStyle = 'rgba(56,189,248,0.18)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Globe inner glow ring
+    ctx.beginPath();
+    ctx.arc(CX, CY, RADIUS, 0, Math.PI*2);
+    ctx.strokeStyle = 'rgba(37,99,235,0.1)';
+    ctx.lineWidth = 8;
+    ctx.stroke();
+
+    // Equator line (subtle)
+    ctx.save();
+    ctx.beginPath();
+    ctx.ellipse(CX, CY, RADIUS, RADIUS * 0.15, 0, 0, Math.PI*2);
+    ctx.strokeStyle = 'rgba(56,189,248,0.06)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.restore();
+
+    // Dots
+    for (let i = 0; i < DOTS.length; i++) {
+      let [x,y,z] = DOTS[i];
+      x*=RADIUS; y*=RADIUS; z*=RADIUS;
+      [x,y,z] = applyRot(x,y,z);
+      if (z > 0) continue; // back-face cull
+      const [sx,sy] = proj(x,y,z);
+      const d = Math.max(0.1, 1-(z+RADIUS)/(2*RADIUS));
+      ctx.beginPath();
+      ctx.arc(sx, sy, 1.0+d*0.8, 0, Math.PI*2);
+      ctx.fillStyle = `rgba(56,189,248,${(d*0.6).toFixed(2)})`;
+      ctx.fill();
+    }
+
+    // Connections
+    for (const [[la1,ln1],[la2,ln2]] of CONNS) {
+      let [x1,y1,z1] = ll2xyz(la1,ln1,RADIUS);
+      let [x2,y2,z2] = ll2xyz(la2,ln2,RADIUS);
+      [x1,y1,z1] = applyRot(x1,y1,z1);
+      [x2,y2,z2] = applyRot(x2,y2,z2);
+      if (z1 > RADIUS*0.35 && z2 > RADIUS*0.35) continue;
+      const [sx1,sy1] = proj(x1,y1,z1);
+      const [sx2,sy2] = proj(x2,y2,z2);
+      const mLen = Math.hypot((x1+x2)/2,(y1+y2)/2,(z1+z2)/2);
+      const mScale = RADIUS*1.28/mLen;
+      const [mcx,mcy] = proj((x1+x2)/2*mScale,(y1+y2)/2*mScale,(z1+z2)/2*mScale);
+      ctx.beginPath();
+      ctx.moveTo(sx1,sy1);
+      ctx.quadraticCurveTo(mcx,mcy,sx2,sy2);
+      ctx.strokeStyle='rgba(37,99,235,0.5)';
+      ctx.lineWidth=1.2;
+      ctx.stroke();
+      // Traveling dot
+      const t = (Math.sin(time*1.05+la1*0.08)+1)/2;
+      const tx=(1-t)*(1-t)*sx1+2*(1-t)*t*mcx+t*t*sx2;
+      const ty=(1-t)*(1-t)*sy1+2*(1-t)*t*mcy+t*t*sy2;
+      ctx.beginPath();
+      ctx.arc(tx,ty,2,0,Math.PI*2);
+      ctx.fillStyle='rgba(56,189,248,0.95)';
+      ctx.fill();
+    }
+
+    // Markers
+    for (const m of MARKERS) {
+      let [x,y,z] = ll2xyz(m.lat,m.lng,RADIUS);
+      [x,y,z] = applyRot(x,y,z);
+      if (z > RADIUS*0.12) continue;
+      const [sx,sy] = proj(x,y,z);
+      const pulse = (Math.sin(time*2+m.lat)*0.5+0.5);
+      // Pulse ring
+      ctx.beginPath();
+      ctx.arc(sx,sy,3.5+pulse*5,0,Math.PI*2);
+      ctx.strokeStyle=m.col.replace('1)','0.12)').replace(/[\d.]+\)$/, `${0.1+pulse*0.14})`);
+      ctx.lineWidth=1;
+      ctx.stroke();
+      // Core
+      ctx.beginPath();
+      ctx.arc(sx,sy,2.8,0,Math.PI*2);
+      ctx.fillStyle=m.col;
+      ctx.fill();
+      // Label
+      ctx.font='8.5px JetBrains Mono, monospace';
+      ctx.fillStyle=m.col.replace(/[\d.]+\)$/,'0.7)');
+      ctx.fillText(m.label, sx+7, sy+3);
+    }
+
+    requestAnimationFrame(draw);
+  }
+
+  canvas.addEventListener('pointerdown', e => {
+    drag = { active:true, sx:e.clientX, sy:e.clientY, ry:rotY, rx:rotX };
+    canvas.setPointerCapture(e.pointerId);
+  });
+  canvas.addEventListener('pointermove', e => {
+    if (!drag.active) return;
+    rotY = drag.ry + (e.clientX-drag.sx)*0.005;
+    rotX = Math.max(-1, Math.min(1, drag.rx + (e.clientY-drag.sy)*0.005));
+  });
+  canvas.addEventListener('pointerup', () => drag.active = false);
+
+  requestAnimationFrame(draw);
+})();
+
+
+/* ═══════════════════════════════════════════════════════════
+   CLOCK COMPONENT
+════════════════════════════════════════════════════════════ */
+(function () {
+  const NS = 'http://www.w3.org/2000/svg';
+  const CX = 55, CY = 55;
+
+  // Draw tick marks on each clock SVG
+  function addTicks(groupId, accentColor) {
+    const g = document.getElementById(groupId);
+    for (let i = 0; i < 12; i++) {
+      const angle = i * 30 * Math.PI / 180;
+      const sin = Math.sin(angle), cos = Math.cos(angle);
+      const isMajor = i % 3 === 0;
+      const outer = 47, inner = isMajor ? 40 : 43;
+      const line = document.createElementNS(NS, 'line');
+      line.setAttribute('x1', CX + outer * sin);
+      line.setAttribute('y1', CY - outer * cos);
+      line.setAttribute('x2', CX + inner * sin);
+      line.setAttribute('y2', CY - inner * cos);
+      line.setAttribute('stroke', accentColor);
+      line.setAttribute('stroke-width', isMajor ? '2' : '1');
+      line.setAttribute('stroke-linecap', 'round');
+      line.setAttribute('opacity', isMajor ? '0.35' : '0.18');
+      g.appendChild(line);
+    }
+    // Minute dots (60 positions)
+    for (let i = 0; i < 60; i++) {
+      if (i % 5 === 0) continue; // skip hour positions (already have lines)
+      const angle = i * 6 * Math.PI / 180;
+      const r = 46.5;
+      const circle = document.createElementNS(NS, 'circle');
+      circle.setAttribute('cx', CX + r * Math.sin(angle));
+      circle.setAttribute('cy', CY - r * Math.cos(angle));
+      circle.setAttribute('r', '0.8');
+      circle.setAttribute('fill', accentColor);
+      circle.setAttribute('opacity', '0.12');
+      g.appendChild(circle);
+    }
+  }
+
+  addTicks('ny-ticks',  'rgba(56,189,248,1)');
+  addTicks('lon-ticks', 'rgba(20,184,166,1)');
+  addTicks('hk-ticks',  'rgba(56,189,248,1)');
+
+  // Hand endpoint from center given angle (deg from 12 o'clock) and length
+  function handPt(angleDeg, len) {
+    const rad = (angleDeg - 90) * Math.PI / 180;
+    return [CX + len * Math.cos(rad), CY + len * Math.sin(rad)];
+  }
+
+  function updateClock(prefix, tz) {
+    const now = new Date();
+    const ts = now.toLocaleTimeString('en-US', { timeZone: tz, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+    const ds = now.toLocaleDateString('en-US', { timeZone: tz, weekday: 'short', month: 'short', day: 'numeric' });
+
+    const el = id => document.getElementById(id);
+    if (el(`${prefix}-time`)) el(`${prefix}-time`).textContent = ts;
+    if (el(`${prefix}-date`)) el(`${prefix}-date`).textContent = ds.toUpperCase();
+
+    const [H, M, S] = ts.split(':').map(Number);
+    const hDeg = ((H % 12) * 30) + (M * 0.5);
+    const mDeg = M * 6;
+    const sDeg = S * 6;
+
+    function setHand(id, deg, len, tailLen) {
+      const hand = el(id);
+      if (!hand) return;
+      const [x2, y2] = handPt(deg, len);
+      hand.setAttribute('x2', x2.toFixed(2));
+      hand.setAttribute('y2', y2.toFixed(2));
+      if (tailLen) {
+        const [x1, y1] = handPt(deg + 180, tailLen);
+        hand.setAttribute('x1', x1.toFixed(2));
+        hand.setAttribute('y1', y1.toFixed(2));
+      }
+    }
+
+    setHand(`${prefix}-h`, hDeg,  22, null);
+    setHand(`${prefix}-m`, mDeg,  32, null);
+    setHand(`${prefix}-s`, sDeg,  36, 5);
+  }
+
+  function tick() {
+    updateClock('ny',  'America/New_York');
+    updateClock('lon', 'Europe/London');
+    updateClock('hk',  'Asia/Hong_Kong');
+  }
+
+  tick();
+  setInterval(tick, 1000);
+})();
+
+
+/* ═══════════════════════════════════════════════════════════
+   SEARCH COMPONENT
+════════════════════════════════════════════════════════════ */
+(function () {
+  const input = document.getElementById('main-search');
+  if (!input) return;
+
+  // CMD/CTRL+K to focus
+  document.addEventListener('keydown', e => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      e.preventDefault();
+      input.focus();
+    }
+    if (e.key === 'Escape' && document.activeElement === input) {
+      input.blur();
+    }
+  });
+
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && input.value.trim()) {
+      const q = encodeURIComponent(input.value.trim());
+      // Route to relevant page based on keywords
+      const v = input.value.toLowerCase();
+      if (v.includes('jira'))    window.location.href = 'pages/jira-ai.html';
+      else if (v.includes('topic') || v.includes('graph')) window.location.href = 'pages/ai-topics.html';
+      else if (v.includes('robot') || v.includes('clone')) window.location.href = 'pages/ai-robot.html';
+      else if (v.includes('pattern') || v.includes('correlation')) window.location.href = 'pages/ai-pattern.html';
+      else if (v.includes('tool') || v.includes('json') || v.includes('fix')) window.location.href = 'pages/ai-tools.html';
+    }
+  });
+})();
+</script>
+</body>
+</html>

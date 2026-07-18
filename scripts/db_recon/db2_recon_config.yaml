@@ -1,0 +1,105 @@
+# db2_recon_config.yaml
+# =====================================================================
+# Shared config for db2_extract.py and recon_compare.py.
+#
+# Passwords are NEVER stored here. Set them as environment variables named
+# below (user_env / password_env) before running the extractor, e.g.:
+#     export DB2_SRC_USER=...   export DB2_SRC_PASSWORD=...
+#     export DB2_TGT_USER=...   export DB2_TGT_PASSWORD=...
+# =====================================================================
+
+# Where dated run folders land by default.
+# Resolved relative to this config file's directory at runtime.
+# Override at invocation with --base-dir.
+output:
+  data_dir: ../../data/db_recon
+
+driver:
+  class: com.ibm.db2.jcc.DB2Driver
+  jar:   /opt/db2/db2jcc4.jar          # the same driver DBArtisan/SQuirreL use
+
+connections:
+  source:
+    jdbc_url:     "jdbc:db2://SRC_HOST:50000/SRCDB"
+    user_env:     DB2_SRC_USER
+    password_env: DB2_SRC_PASSWORD
+    schema:       MYSCHEMA
+  target:
+    jdbc_url:     "jdbc:db2://TGT_HOST:50000/TGTDB"
+    user_env:     DB2_TGT_USER
+    password_env: DB2_TGT_PASSWORD
+    schema:       MYSCHEMA
+
+hash:
+  algorithm:   2                # 2 = SHA256 on z/OS Db2 12; VERIFY the constant
+                                # on your platform. Both sides use it identically
+                                # so even a different constant still reconciles.
+  delimiter:   "|~|"            # must not occur in the data
+  decimal_cast: "DECIMAL(31,8)" # fixed scale => 300.1 and 300.10 hash the same
+
+# ---------------------------------------------------------------------
+# One block per table. key_columns drive the join; anchor_columns are
+# surfaced in every break file so you can trace to the ORDER/FILL/CONTRACT.
+# CONFIRM key_columns against SYSCAT.KEYCOLUSE -- values below are guesses.
+# exclude_columns: audit/ETL fields that legitimately differ post-migration.
+# ---------------------------------------------------------------------
+tables:
+  - name: ORDER
+    key_columns:     [ORDER_ID]
+    anchor_columns:  [ORDER_ID]
+    exclude_columns: [LAST_UPDATE_TS, ETL_BATCH_ID, ROW_VERSION]
+
+  - name: ORDER_FILL
+    key_columns:     [ORDER_ID, FILL_ID]
+    anchor_columns:  [ORDER_ID, FILL_ID]
+    exclude_columns: [LAST_UPDATE_TS]
+
+  - name: FILL
+    key_columns:     [FILL_ID]
+    anchor_columns:  [FILL_ID]
+    exclude_columns: [LAST_UPDATE_TS]
+
+  - name: ORDER_PARENT
+    key_columns:     [ORDER_ID]
+    anchor_columns:  [ORDER_ID, PARENT_ORDER_ID]
+    exclude_columns: [LAST_UPDATE_TS]
+
+  - name: ORDER_OUTGOING
+    key_columns:     [ORDER_ID]
+    anchor_columns:  [ORDER_ID]
+    exclude_columns: [LAST_UPDATE_TS]
+
+  - name: ORDER_INCOMING
+    key_columns:     [ORDER_ID]
+    anchor_columns:  [ORDER_ID]
+    exclude_columns: [LAST_UPDATE_TS]
+
+  - name: ORDER_COMMENT
+    key_columns:     [ORDER_ID, COMMENT_SEQ]
+    anchor_columns:  [ORDER_ID]
+    exclude_columns: [LAST_UPDATE_TS]
+
+  - name: ORDER_GROUP_MEMBER
+    key_columns:     [GROUP_ID, ORDER_ID]
+    anchor_columns:  [ORDER_ID, GROUP_ID]
+    exclude_columns: [LAST_UPDATE_TS]
+
+  - name: ORDER_INST_ALL
+    key_columns:     [ORDER_ID, INST_SEQ]
+    anchor_columns:  [ORDER_ID]
+    exclude_columns: [LAST_UPDATE_TS]
+
+  - name: ENRICHED_EXECUTION
+    key_columns:     [EXECUTION_ID]
+    anchor_columns:  [EXECUTION_ID, FILL_ID]
+    exclude_columns: [LAST_UPDATE_TS]
+
+  - name: ENRICHED_EXECUTION_DERIVED
+    key_columns:     [EXECUTION_ID]
+    anchor_columns:  [EXECUTION_ID, FILL_ID]
+    exclude_columns: [LAST_UPDATE_TS]
+
+  - name: ST_CONTRACT
+    key_columns:     [CONTRACT_ID]
+    anchor_columns:  [CONTRACT_ID]
+    exclude_columns: [LAST_UPDATE_TS]

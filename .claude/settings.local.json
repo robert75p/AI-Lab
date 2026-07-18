@@ -1,0 +1,53 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node -e \":*)",
+      "Bash(python3 -c \":*)",
+      "Bash(powershell -Command \":*)",
+      "Bash(npm install:*)",
+      "Bash(python3 -c \"import json; p=json.load\\(open\\(''c:/sandbox/TRABA-LABS/node_modules/@mediapipe/hands/package.json''\\)\\); print\\(''version:'', p[''version'']\\)\")",
+      "Bash(powershell -Command \"Copy-Item ''C:/sandbox/TRABA-LABS/node_modules/@mediapipe/hands/hands_solution_packed_assets_loader.js'' ''C:/sandbox/TRABA-LABS-DEPLOY/node_modules/@mediapipe/hands/hands_solution_packed_assets_loader.js'' -Force; Write-Host ''OK''\")",
+      "Bash(ls -la \"c:/sandbox/TRABA-LABS/node_modules/@mediapipe/hands/\"*wasm*)",
+      "Bash(powershell -Command \"Copy-Item ''C:/sandbox/TRABA-LABS/pages/ai-tools.html'' ''C:/sandbox/TRABA-LABS-DEPLOY/pages/ai-tools.html'' -Force; Write-Host ''Deploy synced''\")",
+      "Bash(powershell -Command \"Copy-Item ''C:/sandbox/TRABA-LABS/pages/ai-tools.html'' ''C:/sandbox/TRABA-LABS-DEPLOY/pages/ai-tools.html'' -Force; Write-Host ''OK''\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000)",
+      "Bash(node screenshot.mjs \"http://localhost:3000/pages/ai-tools.html\" \"interactive-tab\")",
+      "Bash(for f:*)",
+      "Bash(do echo:*)",
+      "Read(//c/sandbox/TRABA-LABS/**)",
+      "Bash(node screenshot.mjs \"http://localhost:3000\" \"offline-check\")",
+      "Bash(node -e ':*)",
+      "Bash(python3 -c ':*)",
+      "Bash(python3)",
+      "Bash(node screenshot.mjs \"http://localhost:3000/pages/ai-tools.html\" \"fixanalyzer-tab\")",
+      "Bash(node serve.mjs)",
+      "Read(//c/Users/emili/.cache/puppeteer/chrome/**)",
+      "Read(//c/Users/nateh/.cache/puppeteer/**)",
+      "Read(//c/Users/**)",
+      "Bash('.fa-tag-row[data-desc]')",
+      "Bash(sel)",
+      "Bash(node screenshot.mjs http://localhost:3000/pages/ai-tools.html after-diagram)",
+      "Bash(node -e \"const c=require\\('crypto'\\); console.log\\(c.createHash\\('sha256'\\).update\\('trabaeu@26'\\).digest\\('hex'\\)\\);\")",
+      "Bash(node -e \"const c=require\\('crypto'\\); console.log\\(c.createHash\\('sha256'\\).update\\('TRABAEU:trabaeu@26'\\).digest\\('hex'\\)\\);\")",
+      "Bash(node screenshot.mjs http://localhost:3000/login.html login)",
+      "Bash(python3 -c ' *)",
+      "Bash(node screenshot.mjs http://localhost:3000/pages/market-intelligence.html hormuz)",
+      "Bash(node -e ' *)",
+      "Bash(node screenshot.mjs http://localhost:3000/pages/market-intelligence.html hormuz2)",
+      "Bash(cp c:/sandbox/TRABA-LABS/pages/market-intelligence.html c:/sandbox/TRABA-LABS-DEPLOY/pages/market-intelligence.html)",
+      "Bash(node screenshot.mjs http://localhost:3000/pages/market-intelligence.html map2x)",
+      "Bash(node screenshot.mjs http://localhost:3000/pages/market-intelligence.html donut)",
+      "Bash(node screenshot.mjs http://localhost:3000/pages/market-intelligence.html?scroll=donut donut2)",
+      "Read(//c/Users/emili/.claude/**)",
+      "Bash(node screenshot.mjs \"http://localhost:3000/pages/ai-tools.html\" dbrecon-tab)",
+      "Bash(python3 scripts/db_recon/db2_extract.py --config scripts/db_recon/db2_recon_config.yaml --dry-run)",
+      "Bash(python3 scripts/db_recon/run_daily_recon.py --config scripts/db_recon/db2_recon_config.yaml --print-path)",
+      "Bash(git init *)",
+      "Bash(git add *)"
+    ],
+    "additionalDirectories": [
+      "C:\\sandbox\\TRABA-LABS-DEPLOY",
+      "C:\\Users\\emili\\.claude"
+    ]
+  }
+}

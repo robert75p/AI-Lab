@@ -1,0 +1,195 @@
+# AI LABS — BRAND GUIDELINES (Claude Code Ready)
+
+## 1. Brand Overview
+
+* Brand Name: AI Labs
+* Positioning: Advanced, intelligent, modern AI solutions
+* Tone: Professional, minimal, technical, forward-looking
+* Personality: Smart, fast, precise, trustworthy
+
+---
+
+## 2. Color Palette
+
+### Primary Colors
+
+* Navy Blue: #0A1F44 (main brand color)
+* Electric Blue: #2563EB (accent / CTA)
+* Deep Indigo: #1E293B (background alternative)
+
+### Secondary Colors
+
+* Light Blue: #38BDF8 (hover / highlights)
+* Teal: #14B8A6 (AI / data accent)
+* Soft Grey: #ffffff (background)
+
+### Neutral Colors
+
+* White: #FFFFFF
+* Grey: #ecf0f7
+* Border Grey: #E2E8F0
+
+---
+
+## 3. Typography
+
+### Headings
+
+* Font: Inter / Poppins
+* Style: Bold, clean, modern
+* Usage:
+
+  * H1: 48–64px
+  * H2: 32–40px
+  * H3: 24–28px
+
+### Body Text
+
+* Font: Inter / Roboto
+* Size: 16–18px
+* Line height: 1.5–1.7
+
+### Code / Tech Sections
+
+* Font: JetBrains Mono
+* Usage: code blocks, AI outputs
+
+---
+
+## 4. Logo Guidelines
+
+* Style: Minimal + tech-focused
+* Elements:
+
+  * Neural network nodes
+  * Abstract circuits
+  * Upward arrow (growth/intelligence)
+* Colors: Navy + Electric Blue only
+* Background: Prefer white or dark navy
+* Avoid:
+
+  * Overly complex shapes
+  * Too many colors
+  * Gradients (keep minimal)
+
+---
+
+## 5. UI Design System
+
+### Buttons
+
+* Primary:
+
+  * Background: rgb(15, 49, 123)
+  * Text: White
+  * Radius: 8px
+* Secondary:
+
+  * Outline: #2563EB
+  * Text: rgb(61, 119, 242)
+
+### Cards
+
+* Background: White
+* Border: #E2E8F0
+* Shadow: Soft (0px 4px 12px rgba(0,0,0,0.05))
+* Radius: 12px
+
+### Layout
+
+* Grid: 12-column
+* Spacing scale: 8px system (8, 16, 24, 32, 48, 64)
+* Max width: 1200px
+
+---
+
+## 6. Visual Style
+
+### Imagery
+
+* Abstract AI visuals (networks, data flow)
+* Dark + glowing elements
+* Minimal human imagery
+
+### Icons
+
+* Style: Outline or thin stroke
+* Consistent stroke width
+* Use tech-style icons (nodes, arrows, data)
+
+---
+
+## 7. Motion & Animation
+
+* Use subtle animations only:
+
+  * Fade-in (0.3–0.5s)
+  * Hover lift (scale 1.02)
+  * Smooth transitions (ease-in-out)
+
+Avoid:
+
+* Flashy animations
+* Overuse of motion
+
+---
+
+## 8. Copywriting Style
+
+### Tone
+
+* Clear and concise
+* No buzzwords
+* Confident but not arrogant
+
+### Example
+
+Bad:
+"Revolutionary AI disrupting industries"
+
+Good:
+"AI tools designed for speed, accuracy, and scale"
+
+---
+
+## 9. Component Naming (for Claude Code)
+
+Use consistent naming:
+
+* ButtonPrimary
+* ButtonSecondary
+* CardContainer
+* SectionHero
+* SectionFeatures
+* NavbarMain
+* FooterSimple
+
+---
+
+## 10. Example Prompt for Claude Code
+
+"Build a modern AI Labs landing page using:
+
+* Navy (#0A1F44) and Electric Blue (#2563EB)
+* Clean layout, lots of white space
+* Card-based features section
+* Subtle animations
+* Professional and minimal style"
+
+---
+
+## 11. Do / Don’t
+
+### Do
+
+* Keep design minimal
+* Use consistent spacing
+* Focus on readability
+
+### Don’t
+
+* Overload with colors
+* Use random fonts
+* Add unnecessary animations
+
+---

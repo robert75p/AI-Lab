@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JIRA AI Automation — AI Labs</title>
+<script src="/vendor/tailwind.js"></script>
+<link rel="stylesheet" href="/vendor/fonts.css">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background-color: #0A1F44;
+  font-family: 'Inter', sans-serif;
+  color: #F1F5F9;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none; z-index: 0; opacity: 0.5;
+}
+.ambient {
+  position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background:
+    radial-gradient(ellipse 60% 50% at 80% 10%, rgba(37,99,235,0.12) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at 10% 85%, rgba(20,184,166,0.08) 0%, transparent 55%);
+}
+.page-wrap { position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 0 32px; }
+
+/* Nav */
+.nav {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 24px 0; border-bottom: 1px solid rgba(37,99,235,0.12);
+}
+.back-link {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: 'JetBrains Mono', monospace; font-size: 11px;
+  letter-spacing: 0.08em; color: #38BDF8; text-decoration: none;
+  transition: gap 0.2s ease;
+}
+.back-link:hover { gap: 12px; }
+.nav-badge {
+  display: flex; align-items: center; gap: 6px;
+  padding: 4px 10px; border-radius: 999px;
+  background: rgba(37,99,235,0.1); border: 1px solid rgba(37,99,235,0.2);
+  font-family: 'JetBrains Mono', monospace; font-size: 10px;
+  color: #38BDF8; letter-spacing: 0.06em;
+}
+.nav-dot { width: 6px; height: 6px; border-radius: 50%; background: #38BDF8; animation: pulse-dot 2s ease-in-out infinite; }
+
+/* Hero */
+.page-hero { padding: 48px 0 40px; }
+.page-tag {
+  font-family: 'JetBrains Mono', monospace; font-size: 10px;
+  letter-spacing: 0.12em; color: hsl(196, 58%, 68%); margin-bottom: 16px;
+}
+.page-heading {
+  font-family: 'Poppins', sans-serif; font-weight: 800;
+  font-size: clamp(32px, 4vw, 52px); letter-spacing: -0.03em; line-height: 1.05;
+  background: linear-gradient(130deg, #F1F5F9 0%, #38BDF8 70%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text; margin-bottom: 16px;
+}
+.page-desc { font-size: 16px; line-height: 1.75; color: #9cabc2; max-width: 560px; }
+
+/* Cards */
+.card {
+  background: linear-gradient(140deg, rgba(30,41,59,0.9), rgba(10,31,68,0.95));
+  border: 1px solid rgba(37,99,235,0.15);
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.04);
+  padding: 24px;
+}
+
+/* Sprint board */
+.sprint-board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 32px 0; }
+.sprint-col-head {
+  font-family: 'JetBrains Mono', monospace; font-size: 10px;
+  letter-spacing: 0.1em; color: #334155; padding-bottom: 12px;
+  border-bottom: 2px solid; margin-bottom: 12px;
+}
+.task-item {
+  padding: 10px 12px; border-radius: 8px;
+  background: rgba(10,31,68,0.7); border: 1px solid rgba(37,99,235,0.12);
+  margin-bottom: 8px; font-size: 12px; line-height: 1.5;
+}
+.task-tag {
+  display: inline-block; font-family: 'JetBrains Mono', monospace;
+  font-size: 9px; letter-spacing: 0.06em; padding: 2px 6px; border-radius: 4px; margin-bottom: 6px;
+}
+.task-priority { width: 6px; height: 6px; border-radius: 50%; display: inline-block; margin-left: 4px; }
+
+/* Metrics row */
+.metrics-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin: 32px 0; }
+.metric-card {
+  background: linear-gradient(140deg, rgba(30,41,59,0.9), rgba(10,31,68,0.95));
+  border: 1px solid rgba(37,99,235,0.15); border-radius: 12px; padding: 20px;
+}
+.metric-val { font-family: 'Poppins', sans-serif; font-size: 28px; font-weight: 700; letter-spacing: -0.03em; }
+.metric-lbl { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.08em; color: lab(62.88% -0.8 -6.22); margin-top: 4px; }
+.metric-change { font-size: 11px; margin-top: 8px; }
+
+/* AI panel */
+.ai-panel {
+  background: linear-gradient(140deg, rgba(30,41,59,0.9), rgba(10,31,68,0.95));
+  border: 1px solid rgba(37,99,235,0.2); border-radius: 12px; padding: 24px;
+  margin: 16px 0 32px;
+}
+.ai-label {
+  font-family: 'JetBrains Mono', monospace; font-size: 10px;
+  letter-spacing: 0.1em; color: #38BDF8; margin-bottom: 16px;
+  display: flex; align-items: center; gap: 8px;
+}
+.ai-suggestion {
+  display: flex; gap: 12px; padding: 12px; border-radius: 8px;
+  background: rgba(37,99,235,0.06); border: 1px solid rgba(37,99,235,0.1);
+  margin-bottom: 8px; font-size: 13px; line-height: 1.6;
+}
+.ai-icon { width: 24px; height: 24px; border-radius: 6px; background: rgba(37,99,235,0.2); flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; margin-top: 1px; }
+
+@keyframes pulse-dot { 0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.3)} }
+@keyframes fade-up { from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)} }
+.fade-up { animation: fade-up 0.6s cubic-bezier(0.16,1,0.3,1) both; }
+.d1{animation-delay:.1s}.d2{animation-delay:.2s}.d3{animation-delay:.3s}
+
+/* Progress bar */
+.progress-track { height: 4px; border-radius: 2px; background: rgba(37,99,235,0.12); overflow: hidden; margin-top: 8px; }
+.progress-fill  { height: 100%; border-radius: 2px; transition: width 0.6s ease; }
+
+/* Capacity bars */
+.cap-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; font-size: 12px; }
+.cap-name { width: 80px; color: hsl(215, 12%, 60%); font-family:'JetBrains Mono',monospace; font-size:10px; }
+.cap-track { flex: 1; height: 6px; border-radius: 3px; background: rgba(37,99,235,0.1); overflow: hidden; }
+.cap-fill { height: 100%; border-radius: 3px; }
+.cap-pct { width: 36px; text-align: right; font-family:'JetBrains Mono',monospace; font-size:10px; color:hsl(215, 15%, 68%); }
+</style>
+</head>
+<body>
+<div class="ambient"></div>
+<div class="page-wrap">
+
+  <nav class="nav">
+    <a href="../index.html" class="back-link">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+      BACK TO LABS
+    </a>
+    <div class="nav-badge"><div class="nav-dot"></div>JIRA AI MODULE</div>
+  </nav>
+
+  <div class="page-hero fade-up">
+    <div class="page-tag">MODULE 01 / JIRA AI AUTOMATION</div>
+    <h1 class="page-heading">Intelligent Sprint<br>Planning & Tracking</h1>
+    <p class="page-desc">Advanced planning, progress tracking and a capacity driver powered by AI. Automate sprint ceremonies, predict bottlenecks, <br>and optimize TRA-BA-EU capacity in real time.</p>
+  </div>
+
+  <!-- Metrics -->
+  <div class="metrics-row fade-up d1">
+    <div class="metric-card">
+      <div class="metric-val" style="color:#38BDF8;">84%</div>
+      <div class="metric-lbl">VELOCITY INDEX</div>
+      <div class="progress-track"><div class="progress-fill" style="width:84%;background:#38BDF8;"></div></div>
+      <div class="metric-change" style="color:#14B8A6;">↑ +12% vs last sprint</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-val" style="color:#14B8A6;">23</div>
+      <div class="metric-lbl">OPEN ISSUES</div>
+      <div class="progress-track"><div class="progress-fill" style="width:42%;background:#14B8A6;"></div></div>
+      <div class="metric-change" style="color:#38BDF8;">↓ −5 from yesterday</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-val" style="color:#F1F5F9;">96%</div>
+      <div class="metric-lbl">CAPACITY USED</div>
+      <div class="progress-track"><div class="progress-fill" style="width:96%;background:#2563EB;"></div></div>
+      <div class="metric-change" style="color:hsl(215, 10%, 49%);">2 SP remaining</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-val" style="color:#38BDF8;">3d</div>
+      <div class="metric-lbl">SPRINT REMAINING</div>
+      <div class="progress-track"><div class="progress-fill" style="width:60%;background:#38BDF8;"></div></div>
+      <div class="metric-change" style="color:hsl(215, 10%, 49%);">Ends Mar 31</div>
+    </div>
+  </div>
+
+  <!-- Sprint Board -->
+  <div class="sprint-board fade-up d2">
+    <!-- Backlog -->
+    <div class="card">
+      <div class="sprint-col-head" style="border-color:rgba(56,189,248,0.3);color:#38BDF8;">TO DO &nbsp;·&nbsp; 8</div>
+      <div class="task-item">
+        <span class="task-tag" style="background:rgba(37,99,235,0.15);color:#38BDF8;">TRABA-142</span>
+        <span class="task-priority" style="background:#38BDF8;"></span><br>
+        AI model integration for risk scoring
+        <div class="progress-track" style="margin-top:6px;"><div class="progress-fill" style="width:0%;background:#38BDF8;"></div></div>
+      </div>
+      <div class="task-item">
+        <span class="task-tag" style="background:rgba(37,99,235,0.15);color:#38BDF8;">TRABA-138</span><br>
+        Capacity planning dashboard UI
+      </div>
+      <div class="task-item">
+        <span class="task-tag" style="background:rgba(37,99,235,0.15);color:#38BDF8;">TRABA-135</span><br>
+        Auto-generate sprint retrospective summary
+      </div>
+      <div class="task-item">
+        <span class="task-tag" style="background:rgba(37,99,235,0.15);color:#38BDF8;">TRABA-129</span><br>
+        FIX protocol parsing improvements
+      </div>
+    </div>
+    <!-- In Progress -->
+    <div class="card">
+      <div class="sprint-col-head" style="border-color:rgba(20,184,166,0.4);color:#14B8A6;">IN PROGRESS &nbsp;·&nbsp; 5</div>
+      <div class="task-item">
+        <span class="task-tag" style="background:rgba(20,184,166,0.15);color:#14B8A6;">TRABA-141</span><br>
+        Pattern detection algorithm v2
+        <div class="progress-track" style="margin-top:6px;"><div class="progress-fill" style="width:72%;background:#14B8A6;"></div></div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:#334155;margin-top:4px;">72% complete</div>
+      </div>
+      <div class="task-item">
+        <span class="task-tag" style="background:rgba(20,184,166,0.15);color:#14B8A6;">TRABA-137</span><br>
+        Knowledge graph API endpoints
+        <div class="progress-track" style="margin-top:6px;"><div class="progress-fill" style="width:45%;background:#14B8A6;"></div></div>
+      </div>
+      <div class="task-item">
+        <span class="task-tag" style="background:rgba(20,184,166,0.15);color:#14B8A6;">TRABA-133</span><br>
+        Sprint velocity ML model training
+      </div>
+    </div>
+    <!-- Done -->
+    <div class="card">
+      <div class="sprint-col-head" style="border-color:rgba(37,99,235,0.4);color:#38BDF8;">DONE &nbsp;·&nbsp; 12</div>
+      <div class="task-item" style="opacity:0.6;">
+        <span class="task-tag" style="background:rgba(37,99,235,0.1);color:hwb(214 60% 31%);">IDGDQ-140</span><br>
+        Auth middleware refactor ✓
+      </div>
+      <div class="task-item" style="opacity:0.6;">
+        <span class="task-tag" style="background:rgba(37,99,235,0.1);color:hwb(214 60% 31%);">IDGDQ-136</span><br>
+        Search indexing pipeline ✓
+      </div>
+      <div class="task-item" style="opacity:0.6;">
+        <span class="task-tag" style="background:rgba(37,99,235,0.1);color:hwb(214 60% 31%);">IDGDQ-130</span><br>
+        CI/CD pipeline optimization ✓
+      </div>
+      <div class="task-item" style="opacity:0.6;">
+        <span class="task-tag" style="background:rgba(37,99,235,0.1);color:hwb(214 60% 31%);">IDGDQ-128</span><br>
+        API rate limiting implementation ✓
+      </div>
+    </div>
+  </div>
+
+  <!-- AI Suggestions + Capacity -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;" class="fade-up d3">
+    <!-- AI Panel -->
+    <div class="ai-panel">
+      <div class="ai-label">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        AI RECOMMENDATIONS
+      </div>
+      <div class="ai-suggestion">
+        <div class="ai-icon">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        </div>
+        <div><strong style="color:#F1F5F9;font-size:12px;">Rebalance sprint load</strong> — TRABA-141 is at risk of missing deadline. Suggest moving TRABA-129 to next sprint to free capacity.</div>
+      </div>
+      <div class="ai-suggestion">
+        <div class="ai-icon">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#14B8A6" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        </div>
+        <div><strong style="color:#F1F5F9;font-size:12px;">Velocity forecast</strong> — Based on current pace, team will complete 34 SP this sprint. Predicted completion: 94%.</div>
+      </div>
+      <div class="ai-suggestion">
+        <div class="ai-icon">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        </div>
+        <div><strong style="color:#F1F5F9;font-size:12px;">Bottleneck detected</strong> — Code review stage has 6 PRs waiting &gt;24h. Recommend pairing reviewers to unblock pipeline.</div>
+      </div>
+    </div>
+
+    <!-- Capacity -->
+    <div class="card">
+      <div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.1em;color:#38BDF8;margin-bottom:20px;">TEAM CAPACITY DRIVER</div>
+      <div class="cap-bar">
+        <div class="cap-name">BACKEND</div>
+        <div class="cap-track"><div class="cap-fill" style="width:88%;background:linear-gradient(90deg,#2563EB,#38BDF8);"></div></div>
+        <div class="cap-pct">88%</div>
+      </div>
+      <div class="cap-bar">
+        <div class="cap-name">FRONTEND</div>
+        <div class="cap-track"><div class="cap-fill" style="width:72%;background:linear-gradient(90deg,#14B8A6,#38BDF8);"></div></div>
+        <div class="cap-pct">72%</div>
+      </div>
+      <div class="cap-bar">
+        <div class="cap-name">ML / AI</div>
+        <div class="cap-track"><div class="cap-fill" style="width:95%;background:linear-gradient(90deg,#2563EB,#14B8A6);"></div></div>
+        <div class="cap-pct">95%</div>
+      </div>
+      <div class="cap-bar">
+        <div class="cap-name">DEVOPS</div>
+        <div class="cap-track"><div class="cap-fill" style="width:55%;background:linear-gradient(90deg,#38BDF8,#14B8A6);"></div></div>
+        <div class="cap-pct">55%</div>
+      </div>
+      <div class="cap-bar">
+        <div class="cap-name">QA</div>
+        <div class="cap-track"><div class="cap-fill" style="width:64%;background:linear-gradient(90deg,#2563EB,#38BDF8);"></div></div>
+        <div class="cap-pct">64%</div>
+      </div>
+      <div style="margin-top:16px;padding-top:16px;border-top:1px solid hwb(176 40% 6% / 0.823);font-size:12px;color:hwb(204 65% 18%);line-height:1.6;">
+        AI-predicted optimal sprint size: <span style="color:#38BDF8;font-family:'JetBrains Mono',monospace;">36 SP</span><br>
+        Current allocation: <span style="color:#F1F5F9;font-family:'JetBrains Mono',monospace;">34 SP</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

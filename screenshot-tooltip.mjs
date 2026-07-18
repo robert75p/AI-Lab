@@ -1,0 +1,17 @@
+import puppeteer from 'puppeteer';
+const browser = await puppeteer.launch({ executablePath: 'C:/Users/emili/.cache/puppeteer/chrome/win64-146.0.7680.153/chrome-win64/chrome.exe', headless:true, args:['--no-sandbox'] });
+const page = await browser.newPage();
+await page.setViewport({width:1600, height:950});
+await page.goto('http://localhost:3000/pages/ai-tools.html', {waitUntil:'networkidle0'});
+await page.evaluate(() => { Array.from(document.querySelectorAll('.tool-tab')).find(el=>el.textContent.includes('FIX ANALYZER')).click(); });
+await new Promise(r => setTimeout(r, 2500));
+await page.evaluate(() => { document.getElementById('fa-run-btn').click(); });
+await new Promise(r => setTimeout(r, 700));
+await page.evaluate(() => window.scrollTo(0, 350));
+await new Promise(r => setTimeout(r, 200));
+const rows = await page.$$('.fa-tag-row');
+if (rows.length > 5) await rows[8].hover();
+await new Promise(r => setTimeout(r, 400));
+await page.screenshot({path:'temporary screenshots/screenshot-7-tooltip.png'});
+await browser.close();
+console.log('done');
