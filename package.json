@@ -6,8 +6,10 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "recon:daily": "python3 scripts/db_recon/run_daily_recon.py --config scripts/db_recon/db2_recon_config.yaml",
-    "recon:dry-run": "python3 scripts/db_recon/db2_extract.py --config scripts/db_recon/db2_recon_config.yaml --dry-run",
-    "recon:path": "python3 scripts/db_recon/run_daily_recon.py --config scripts/db_recon/db2_recon_config.yaml --print-path"
+    "recon:dry-run": "python3 scripts/db_recon/run_daily_recon.py --config scripts/db_recon/db2_recon_config.yaml --dry-run",
+    "recon:path": "python3 scripts/db_recon/run_daily_recon.py --config scripts/db_recon/db2_recon_config.yaml --print-path",
+    "recon:compare": "python3 scripts/db_recon/run_daily_recon.py --config scripts/db_recon/db2_recon_config.yaml --skip-extract",
+    "recon:test": "python3 -m pytest scripts/db_recon/tests/ -v"
   },
   "keywords": [],
   "author": "",

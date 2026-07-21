@@ -996,14 +996,14 @@ body::after {
     <!-- Sidebar: table list -->
     <div class="dbr-sidebar">
       <div class="dbr-sidebar-hd">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"/></svg>
-        SOURCE SCHEMA
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        RUN HISTORY
       </div>
       <div class="dbr-search">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#2d4a6a" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <input type="text" placeholder="filter tables..." oninput="dbrFilter(this.value)"/>
       </div>
-      <div class="dbr-schema-label">ATHENA &middot; executions_db</div>
+      <div class="dbr-schema-label" id="dbr-run-label">LOADING&hellip;</div>
       <div class="dbr-table-list" id="dbr-table-list"></div>
     </div>
 
@@ -1011,34 +1011,34 @@ body::after {
     <div class="dbr-main">
       <div class="dbr-stat-row">
         <div class="dbr-stat-card">
-          <div class="dbr-stat-lbl">TOTAL TABLES</div>
-          <div class="dbr-stat-val">24</div>
-          <div class="dbr-stat-sub" style="color:#ecf0f7;">in scope</div>
+          <div class="dbr-stat-lbl">TABLES</div>
+          <div class="dbr-stat-val" id="dbr-stat-total">—</div>
+          <div class="dbr-stat-sub" id="dbr-stat-total-sub" style="color:#ecf0f7;">in run</div>
         </div>
         <div class="dbr-stat-card">
-          <div class="dbr-stat-lbl">MIGRATED</div>
-          <div class="dbr-stat-val" style="color:#14B8A6;">17</div>
-          <div class="dbr-stat-sub" style="color:#14B8A6;">70.8% complete</div>
+          <div class="dbr-stat-lbl">PASS</div>
+          <div class="dbr-stat-val" id="dbr-stat-pass" style="color:#14B8A6;">—</div>
+          <div class="dbr-stat-sub" id="dbr-stat-pass-sub" style="color:#14B8A6;">tables clean</div>
         </div>
         <div class="dbr-stat-card">
-          <div class="dbr-stat-lbl">WARNINGS</div>
-          <div class="dbr-stat-val" style="color:#fbbf24;">5</div>
-          <div class="dbr-stat-sub" style="color:#fbbf24;">type drift</div>
+          <div class="dbr-stat-lbl">ENTITY CHECKS</div>
+          <div class="dbr-stat-val" id="dbr-stat-entity" style="color:#38BDF8;">—</div>
+          <div class="dbr-stat-sub" id="dbr-stat-entity-sub" style="color:#38BDF8;">cross-table</div>
         </div>
         <div class="dbr-stat-card">
-          <div class="dbr-stat-lbl">ERRORS</div>
-          <div class="dbr-stat-val" style="color:#ef4444;">2</div>
-          <div class="dbr-stat-sub" style="color:#ef4444;">blocked</div>
+          <div class="dbr-stat-lbl">BREAK</div>
+          <div class="dbr-stat-val" id="dbr-stat-err" style="color:#ef4444;">—</div>
+          <div class="dbr-stat-sub" id="dbr-stat-err-sub" style="color:#ef4444;">tables broken</div>
         </div>
       </div>
 
       <div class="dbr-panel-box">
         <div class="dbr-panel-hd">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
-          SCHEMA DIFF
-          <span id="dbr-active-table">SELECT A TABLE</span>
+          TABLE RESULTS
+          <span id="dbr-active-table">SELECT A RUN</span>
         </div>
-        <div class="dbr-progress-bar"><div class="dbr-progress-fill" style="width:70.8%"></div></div>
+        <div class="dbr-progress-bar"><div class="dbr-progress-fill" id="dbr-progress-fill" style="width:0%"></div></div>
         <div style="overflow-x:auto;">
           <table class="dbr-schema-table">
             <thead>
@@ -1057,8 +1057,8 @@ body::after {
       <div class="dbr-panel-box">
         <div class="dbr-panel-hd">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-          MIGRATION LOG
-          <span>LIVE &middot; ATHENA EXECUTOR</span>
+          PIPELINE LOG
+          <span id="dbr-open-report-wrap"></span>
         </div>
         <div class="dbr-log" id="dbr-log"></div>
       </div>
@@ -1109,119 +1109,53 @@ function switchTab(id, el) {
   if (id === 'dbrecon') initDbrecon();
 }
 
-// -- DB Recon [Athena Mig] --
+// -- DB Recon [Athena Mig] — reads live data from data/db_recon/manifest.json --
 (function() {
-  var DBR_TABLES = [
-    { name:'executions',          status:'ok',   cols: [
-      { col:'exec_id',       src:'VARCHAR(36)',  tgt:'STRING',        st:'ok',      null:'N', note:'' },
-      { col:'order_id',      src:'VARCHAR(36)',  tgt:'STRING',        st:'ok',      null:'N', note:'' },
-      { col:'exec_type',     src:'CHAR(1)',      tgt:'STRING',        st:'warn',    null:'N', note:'char→string widening' },
-      { col:'side',          src:'CHAR(1)',      tgt:'STRING',        st:'warn',    null:'N', note:'char→string widening' },
-      { col:'price',         src:'DECIMAL(18,8)',tgt:'DOUBLE',        st:'warn',    null:'Y', note:'precision loss risk' },
-      { col:'qty',           src:'DECIMAL(18,8)',tgt:'DOUBLE',        st:'ok',      null:'N', note:'' },
-      { col:'leaves_qty',    src:'DECIMAL(18,8)',tgt:'DOUBLE',        st:'ok',      null:'N', note:'' },
-      { col:'cum_qty',       src:'DECIMAL(18,8)',tgt:'DOUBLE',        st:'ok',      null:'N', note:'' },
-      { col:'transact_time', src:'TIMESTAMP',    tgt:'TIMESTAMP',     st:'ok',      null:'N', note:'' },
-      { col:'symbol',        src:'VARCHAR(20)',  tgt:'STRING',        st:'ok',      null:'N', note:'' },
-      { col:'venue',         src:'VARCHAR(10)',  tgt:'STRING',        st:'ok',      null:'Y', note:'' },
-      { col:'client_id',     src:'BIGINT',       tgt:'BIGINT',        st:'ok',      null:'N', note:'' },
-    ]},
-    { name:'orders',              status:'ok',   cols: [
-      { col:'order_id',      src:'VARCHAR(36)',  tgt:'STRING',        st:'ok',      null:'N', note:'' },
-      { col:'cl_ord_id',     src:'VARCHAR(36)',  tgt:'STRING',        st:'ok',      null:'N', note:'' },
-      { col:'symbol',        src:'VARCHAR(20)',  tgt:'STRING',        st:'ok',      null:'N', note:'' },
-      { col:'ord_type',      src:'CHAR(1)',      tgt:'STRING',        st:'warn',    null:'N', note:'char→string' },
-      { col:'ord_status',    src:'CHAR(1)',      tgt:'STRING',        st:'warn',    null:'N', note:'char→string' },
-      { col:'price',         src:'DECIMAL(18,8)',tgt:'DOUBLE',        st:'ok',      null:'Y', note:'' },
-      { col:'qty',           src:'DECIMAL(18,8)',tgt:'DOUBLE',        st:'ok',      null:'N', note:'' },
-      { col:'account',       src:'VARCHAR(50)',  tgt:'STRING',        st:'ok',      null:'Y', note:'' },
-      { col:'submit_time',   src:'TIMESTAMP',    tgt:'TIMESTAMP',     st:'ok',      null:'N', note:'' },
-    ]},
-    { name:'instruments',         status:'ok',   cols: [
-      { col:'symbol',        src:'VARCHAR(20)',  tgt:'STRING',        st:'ok',      null:'N', note:'' },
-      { col:'sec_type',      src:'CHAR(2)',      tgt:'STRING',        st:'warn',    null:'N', note:'char→string' },
-      { col:'currency',      src:'CHAR(3)',      tgt:'STRING',        st:'ok',      null:'N', note:'' },
-      { col:'exchange',      src:'VARCHAR(10)',  tgt:'STRING',        st:'ok',      null:'Y', note:'' },
-      { col:'isin',          src:'CHAR(12)',     tgt:'STRING',        st:'ok',      null:'Y', note:'' },
-    ]},
-    { name:'positions',           status:'warn', cols: [
-      { col:'account',       src:'VARCHAR(50)',  tgt:'STRING',        st:'ok',      null:'N', note:'' },
-      { col:'symbol',        src:'VARCHAR(20)',  tgt:'STRING',        st:'ok',      null:'N', note:'' },
-      { col:'long_qty',      src:'DECIMAL(18,8)',tgt:'DOUBLE',        st:'ok',      null:'N', note:'' },
-      { col:'short_qty',     src:'DECIMAL(18,8)',tgt:'DOUBLE',        st:'ok',      null:'N', note:'' },
-      { col:'avg_price',     src:'DECIMAL(18,8)',tgt:'DOUBLE',        st:'warn',    null:'Y', note:'precision loss risk' },
-      { col:'settlement_dt', src:'DATE',         tgt:'STRING',        st:'err',     null:'Y', note:'DATE not natively supported in Athena partition — use STRING(YYYY-MM-DD)' },
-    ]},
-    { name:'allocations',         status:'warn', cols: [
-      { col:'alloc_id',      src:'VARCHAR(36)',  tgt:'STRING',        st:'ok',      null:'N', note:'' },
-      { col:'exec_id',       src:'VARCHAR(36)',  tgt:'STRING',        st:'ok',      null:'N', note:'' },
-      { col:'account',       src:'VARCHAR(50)',  tgt:'STRING',        st:'ok',      null:'N', note:'' },
-      { col:'alloc_qty',     src:'DECIMAL(18,8)',tgt:'DOUBLE',        st:'ok',      null:'N', note:'' },
-      { col:'alloc_price',   src:'DECIMAL(18,8)',tgt:'DOUBLE',        st:'warn',    null:'Y', note:'precision loss risk' },
-    ]},
-    { name:'fix_messages',        status:'err',  cols: [
-      { col:'msg_seq_num',   src:'BIGINT',       tgt:'BIGINT',        st:'ok',      null:'N', note:'' },
-      { col:'sender_comp_id',src:'VARCHAR(30)',  tgt:'STRING',        st:'ok',      null:'N', note:'' },
-      { col:'target_comp_id',src:'VARCHAR(30)',  tgt:'STRING',        st:'ok',      null:'N', note:'' },
-      { col:'msg_type',      src:'VARCHAR(4)',   tgt:'STRING',        st:'ok',      null:'N', note:'' },
-      { col:'raw_message',   src:'TEXT',         tgt:'STRING',        st:'err',     null:'Y', note:'TEXT > 1MB rows exceed Athena string limit' },
-      { col:'send_time',     src:'TIMESTAMP',    tgt:'TIMESTAMP',     st:'ok',      null:'N', note:'' },
-    ]},
-    { name:'clients',             status:'ok',   cols: [
-      { col:'client_id',     src:'BIGINT',       tgt:'BIGINT',        st:'ok',      null:'N', note:'' },
-      { col:'client_name',   src:'VARCHAR(100)', tgt:'STRING',        st:'ok',      null:'N', note:'' },
-      { col:'onboard_date',  src:'DATE',         tgt:'STRING',        st:'warn',    null:'N', note:'DATE→STRING for Athena compat' },
-    ]},
-    { name:'venues',              status:'ok',   cols: [
-      { col:'mic',           src:'CHAR(4)',       tgt:'STRING',        st:'ok',      null:'N', note:'' },
-      { col:'name',          src:'VARCHAR(80)',   tgt:'STRING',        st:'ok',      null:'N', note:'' },
-      { col:'country',       src:'CHAR(2)',       tgt:'STRING',        st:'ok',      null:'N', note:'' },
-      { col:'active',        src:'BOOLEAN',       tgt:'BOOLEAN',       st:'ok',      null:'N', note:'' },
-    ]},
-    { name:'audit_log',           status:'pend', cols: [] },
-    { name:'fee_schedules',       status:'pend', cols: [] },
-    { name:'margin_calls',        status:'err',  cols: [
-      { col:'call_id',       src:'BIGINT',       tgt:'BIGINT',        st:'ok',      null:'N', note:'' },
-      { col:'account',       src:'VARCHAR(50)',  tgt:'STRING',        st:'ok',      null:'N', note:'' },
-      { col:'call_amount',   src:'DECIMAL(18,2)',tgt:'DOUBLE',        st:'ok',      null:'N', note:'' },
-      { col:'status',        src:'ENUM',         tgt:'STRING',        st:'err',     null:'N', note:'ENUM type not supported in Athena — convert to STRING with CHECK' },
-    ]},
-    { name:'settlement_instr',    status:'pend', cols: [] },
-    { name:'risk_limits',         status:'ok',   cols: [] },
-    { name:'benchmark_prices',    status:'ok',   cols: [] },
-  ];
-
-  var DBR_LOGS = [
-    { ts:'09:14:02', tag:'OK',   cls:'ok',   msg:'Table <b>executions</b> migrated — 14.2M rows, 0 errors' },
-    { ts:'09:14:45', tag:'OK',   cls:'ok',   msg:'Table <b>orders</b> migrated — 6.8M rows, 0 errors' },
-    { ts:'09:15:11', tag:'WARN', cls:'warn', msg:'<b>executions.exec_type</b> CHAR(1) → STRING: widening accepted' },
-    { ts:'09:15:33', tag:'OK',   cls:'ok',   msg:'Table <b>instruments</b> migrated — 4,210 rows' },
-    { ts:'09:16:00', tag:'WARN', cls:'warn', msg:'<b>positions.avg_price</b> DECIMAL(18,8) → DOUBLE: precision loss acknowledged' },
-    { ts:'09:16:12', tag:'ERR',  cls:'err',  msg:'<b>positions.settlement_dt</b> DATE type blocked — Athena partition incompatibility' },
-    { ts:'09:16:44', tag:'INFO', cls:'info', msg:'Applying workaround: DATE → STRING(YYYY-MM-DD) cast on <b>positions</b>' },
-    { ts:'09:17:05', tag:'OK',   cls:'ok',   msg:'Table <b>clients</b> migrated — 1,842 rows' },
-    { ts:'09:17:20', tag:'ERR',  cls:'err',  msg:'<b>fix_messages.raw_message</b> TEXT > Athena 1MB string limit — table blocked' },
-    { ts:'09:17:35', tag:'ERR',  cls:'err',  msg:'<b>margin_calls.status</b> ENUM type unsupported in Athena DDL' },
-    { ts:'09:17:50', tag:'INFO', cls:'info', msg:'Tables <b>audit_log</b>, <b>fee_schedules</b>, <b>settlement_instr</b> queued — pending review' },
-  ];
-
   var dbrInited = false;
+  var currentManifest = null;
 
   window.initDbrecon = function() {
     if (dbrInited) return;
     dbrInited = true;
-    renderDbrTables(DBR_TABLES);
-    renderDbrLog();
+    var label = document.getElementById('dbr-run-label');
+    if (label) label.textContent = 'FETCHING…';
+    fetch('/data/db_recon/manifest.json')
+      .then(function(r) { return r.ok ? r.json() : null; })
+      .catch(function() { return null; })
+      .then(function(manifest) {
+        currentManifest = manifest;
+        if (!manifest || !manifest.runs || !manifest.runs.length) {
+          showNoRuns();
+        } else {
+          renderRunList(manifest.runs);
+          dbrSelectRun(manifest.runs[0].date);
+        }
+      });
   };
 
-  function renderDbrTables(tables) {
+  function showNoRuns() {
+    var list = document.getElementById('dbr-table-list');
+    if (list) list.innerHTML = '<div style="padding:20px 16px;font-family:\'JetBrains Mono\',monospace;font-size:10px;color:#ecf0f7;line-height:1.7;">'
+      + 'No runs found.<br><br>Run the pipeline:<br>'
+      + '<span style="color:#14B8A6;">npm run recon:daily</span></div>';
+    var label = document.getElementById('dbr-run-label');
+    if (label) label.textContent = 'NO RUNS';
+    var body = document.getElementById('dbr-diff-body');
+    if (body) body.innerHTML = '<tr><td colspan="6" style="color:#ecf0f7;padding:24px 14px;text-align:center;">Run the pipeline to generate a report</td></tr>';
+    ['dbr-stat-total','dbr-stat-pass','dbr-stat-entity','dbr-stat-err'].forEach(function(id) {
+      var el = document.getElementById(id); if (el) el.textContent = '—';
+    });
+  }
+
+  function renderRunList(runs) {
     var list = document.getElementById('dbr-table-list');
     if (!list) return;
-    list.innerHTML = tables.map(function(t) {
-      return '<div class="dbr-table-item" data-name="'+t.name+'" onclick="dbrSelect(\''+t.name+'\')">'
-        + '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="7" rx="1"/><rect x="3" y="14" width="18" height="7" rx="1"/></svg>'
-        + t.name
-        + '<span class="dbr-badge '+t.status+'">'+t.status.toUpperCase()+'</span>'
+    list.innerHTML = runs.map(function(r) {
+      var cls = r.status === 'PASS' ? 'ok' : 'err';
+      return '<div class="dbr-table-item" data-date="'+r.date+'" onclick="dbrSelectRun(\''+r.date+'\')">'
+        + '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>'
+        + r.date
+        + '<span class="dbr-badge '+cls+'">'+r.status+'</span>'
         + '</div>';
     }).join('');
   }
@@ -1229,52 +1163,120 @@ function switchTab(id, el) {
   window.dbrFilter = function(val) {
     var q = val.toLowerCase();
     document.querySelectorAll('.dbr-table-item').forEach(function(el) {
-      el.style.display = el.dataset.name.includes(q) ? '' : 'none';
+      el.style.display = (el.dataset.date || '').includes(q) ? '' : 'none';
     });
   };
 
-  window.dbrSelect = function(name) {
-    document.querySelectorAll('.dbr-table-item').forEach(function(el) {
-      el.classList.toggle('active', el.dataset.name === name);
-    });
-    var lbl = document.getElementById('dbr-active-table');
-    if (lbl) lbl.textContent = name.toUpperCase();
+  window.dbrSelectRun = function(date) {
+    if (!currentManifest) return;
+    var run = currentManifest.runs.find(function(r) { return r.date === date; });
+    if (!run) return;
 
-    var t = DBR_TABLES.find(function(x){ return x.name === name; });
+    // Highlight sidebar
+    document.querySelectorAll('.dbr-table-item').forEach(function(el) {
+      el.classList.toggle('active', el.dataset.date === date);
+    });
+
+    // Stat cards
+    var tables = Object.values(run.tables || {});
+    var total = tables.length;
+    var pass  = tables.filter(function(t) { return t.status === 'PASS'; }).length;
+    var brk   = tables.filter(function(t) { return t.status === 'BREAK'; }).length;
+    var passRate = total ? Math.round(100 * pass / total) : 0;
+    setText('dbr-stat-total',  total || '—');
+    setText('dbr-stat-pass',   pass  || '—');
+    setText('dbr-stat-entity', run.entity || '—');
+    setText('dbr-stat-err',    brk   || '—');
+    setText('dbr-stat-pass-sub', passRate + '% clean');
+    setText('dbr-stat-entity-sub', 'ORDER/FILL checks');
+    setText('dbr-stat-err-sub', brk ? 'need attention' : 'all clear');
+    setText('dbr-run-label', 'RUN · DB2 → ATHENA · ' + date);
+    setText('dbr-active-table', date);
+
+    // Progress bar
+    var fill = document.getElementById('dbr-progress-fill');
+    if (fill) fill.style.width = passRate + '%';
+
+    // Table results
+    renderTableResults(run);
+    renderPipelineLog(run);
+    renderOpenReport(run);
+  };
+
+  function setText(id, v) {
+    var el = document.getElementById(id); if (el) el.textContent = v;
+  }
+
+  function renderTableResults(run) {
     var body = document.getElementById('dbr-diff-body');
     if (!body) return;
-
-    if (!t || !t.cols.length) {
-      body.innerHTML = '<tr><td colspan="6" style="color:#ecf0f7;padding:20px 14px;text-align:center;">No schema data yet — table pending</td></tr>';
+    var tables = run.tables || {};
+    var names = Object.keys(tables);
+    if (!names.length) {
+      body.innerHTML = '<tr><td colspan="6" style="color:#ecf0f7;padding:20px 14px;text-align:center;">No table data in this run</td></tr>';
       return;
     }
-
-    var stMap = { ok:'dbr-diff-same', warn:'dbr-diff-changed', err:'dbr-diff-removed', added:'dbr-diff-added' };
-    var stLabel = { ok:'OK', warn:'WARN', err:'ERROR', added:'ADDED' };
-    body.innerHTML = t.cols.map(function(c) {
-      var cls = stMap[c.st] || '';
+    body.innerHTML = names.map(function(name) {
+      var t = tables[name];
+      var stCls = t.status === 'PASS' ? 'dbr-diff-same' : 'dbr-diff-removed';
+      var badgeCls = t.status === 'PASS' ? 'ok' : 'err';
+      var rate = t.match_rate_pct != null ? t.match_rate_pct + '%' : '—';
+      var diffs = t.cell_diffs != null ? t.cell_diffs : '—';
+      var rows = t.rows_source != null ? Number(t.rows_source).toLocaleString() : '—';
       return '<tr>'
-        + '<td class="dbr-col-name">'+c.col+'</td>'
-        + '<td class="dbr-col-type">'+c.src+'</td>'
-        + '<td class="dbr-col-type">'+c.tgt+'</td>'
-        + '<td class="'+cls+'">'+(stLabel[c.st]||c.st)+'</td>'
-        + '<td style="color:#ecf0f7">'+c.null+'</td>'
-        + '<td style="color:#ecf0f7;font-size:9.5px;">'+c.note+'</td>'
+        + '<td class="dbr-col-name">'+name+'</td>'
+        + '<td class="dbr-col-type">'+rows+'</td>'
+        + '<td class="dbr-col-type">'+rate+'</td>'
+        + '<td class="'+stCls+'"><span class="dbr-badge '+badgeCls+'">'+t.status+'</span></td>'
+        + '<td style="color:'+(diffs && diffs !== '0' ? '#ef4444' : '#14B8A6')+'">'+diffs+'</td>'
+        + '<td style="color:#ecf0f7;font-size:9.5px;">'+(t.rows_with_diffs ? t.rows_with_diffs + ' row(s) differ' : 'clean')+'</td>'
         + '</tr>';
     }).join('');
-  };
+    // Update column headers to match new data
+    var thead = body.closest('table');
+    if (thead) {
+      var ths = thead.querySelectorAll('th');
+      var labels = ['TABLE','SOURCE ROWS','MATCH RATE','STATUS','CELL DIFFS','NOTES'];
+      ths.forEach(function(th, i) { if (labels[i]) th.textContent = labels[i]; });
+    }
+  }
 
-  function renderDbrLog() {
+  function renderPipelineLog(run) {
     var log = document.getElementById('dbr-log');
     if (!log) return;
-    log.innerHTML = DBR_LOGS.map(function(l) {
+    var tables = run.tables || {};
+    var entries = Object.entries(tables).map(function(kv) {
+      var name = kv[0], t = kv[1];
+      var cls = t.status === 'PASS' ? 'ok' : 'err';
+      var tag = t.status === 'PASS' ? 'PASS' : 'BREAK';
+      var rows = t.rows_source != null ? Number(t.rows_source).toLocaleString() + ' rows' : '';
+      var diffs = t.cell_diffs ? ', <b>' + t.cell_diffs + ' field diff(s)</b>' : '';
       return '<div class="dbr-log-row">'
-        + '<span class="dbr-log-ts">'+l.ts+'</span>'
-        + '<span class="dbr-log-tag '+l.cls+'">'+l.tag+'</span>'
-        + '<span class="dbr-log-msg">'+l.msg+'</span>'
+        + '<span class="dbr-log-ts">'+run.date+'</span>'
+        + '<span class="dbr-log-tag '+cls+'">'+tag+'</span>'
+        + '<span class="dbr-log-msg"><b>'+name+'</b> — '+rows+diffs+'</span>'
         + '</div>';
-    }).join('');
+    });
+    if (run.entity) {
+      var eCls = run.entity === 'PASS' ? 'ok' : (run.entity === 'INFO' ? 'info' : 'err');
+      entries.push('<div class="dbr-log-row">'
+        + '<span class="dbr-log-ts">'+run.date+'</span>'
+        + '<span class="dbr-log-tag '+eCls+'">'+run.entity+'</span>'
+        + '<span class="dbr-log-msg">Entity &amp; linkage checks (ORDER / ORDER_FILL / FILL)</span>'
+        + '</div>');
+    }
+    log.innerHTML = entries.join('');
     log.scrollTop = log.scrollHeight;
+  }
+
+  function renderOpenReport(run) {
+    var wrap = document.getElementById('dbr-open-report-wrap');
+    if (!wrap || !run.report) return;
+    wrap.innerHTML = '<a href="/'+run.report+'" target="_blank" style="'
+      + 'font-family:\'JetBrains Mono\',monospace;font-size:9px;letter-spacing:.06em;'
+      + 'color:#14B8A6;text-decoration:none;padding:2px 8px;border:1px solid rgba(20,184,166,.35);'
+      + 'border-radius:3px;cursor:pointer;white-space:nowrap;'
+      + '" onmouseover="this.style.background=\'rgba(20,184,166,.12)\'" onmouseout="this.style.background=\'\'">OPEN REPORT &#x2197;</a>';
   }
 })();
 

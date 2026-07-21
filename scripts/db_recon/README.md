@@ -1,162 +1,93 @@
-# DB2 Migration Reconciliation Toolkit
+# DB2 Reconciliation Toolkit
 
-Daily validation of a DB2 → DB2 migration across the ORDER / FILL / ST_CONTRACT
-domain. Both databases are the **same DB2 version**, so the row-hash is computed
-in-database on each side with identical SQL and the hashes compare directly.
+Config-driven pipeline that compares two DB2 databases across 12 tables and produces a single self-contained HTML sign-off report.
 
-## What's in here
-
-| File | Role |
-|---|---|
-| `db2_extract.py` | Connects to **both** DB2 databases, generates a normalized row-hash query per table from the catalog, and writes `key + anchor + ROW_HASH` extracts into a folder. |
-| `recon_compare.py` | Reads the extracts from that folder, compares source vs target by key + hash, and writes break files + metrics **back into the same folder**. |
-| `run_daily_recon.py` | One-command wrapper: extract → compare into a dated folder. |
-| `db2_recon_config.yaml` | Shared config: connections, hash settings, per-table keys/anchors/excludes. |
-
-## Data flow
-
-```
-   ┌────────────┐        ┌────────────┐
-   │ SOURCE DB2 │        │ TARGET DB2 │
-   └─────┬──────┘        └─────┬──────┘
-         │  key+anchor+hash    │  key+anchor+hash   (db2_extract.py)
-         ▼                     ▼
-   ./recon/2026-07-01/  ORDER_FILL__source.csv , ORDER_FILL__target.csv , ...
-         │
-         ▼  (recon_compare.py, same folder)
-   ORDER_FILL__only_in_source.csv
-   ORDER_FILL__only_in_target.csv
-   ORDER_FILL__hash_mismatch.csv     <- carries ORDER_ID / FILL_ID anchor
-   ORDER_FILL__metrics.json
-   recon_summary.csv / recon_summary.json
-```
-
-## Setup
-
-### 1. Python environment
+## Prerequisites
 
 ```bash
-# From the repo root
-python3 -m venv .venv
-source .venv/bin/activate          # Windows: .venv\Scripts\activate
-pip install -r scripts/db_recon/requirements.txt
+cd scripts/db_recon
+pip install -r requirements.txt
+# jaydebeapi also requires a DB2 JDBC driver JAR (db2jcc4.jar)
 ```
 
-### 2. Credentials
+## Credentials
 
-Copy `.env.example` to `.env` (repo root) and fill in real values:
+Never stored in the config. Set before running a live extract:
 
 ```bash
-cp .env.example .env
+export DB2_SRC_USER=...
+export DB2_SRC_PASSWORD=...
+export DB2_TGT_USER=...
+export DB2_TGT_PASSWORD=...
 ```
 
-Then source it before running (or set the vars in your CI/scheduler):
+## Daily run
 
 ```bash
-# Linux / macOS
-source .env
-# Windows PowerShell
-Get-Content .env | ForEach-Object { $v = $_ -split '=',2; if ($v[0]) { [System.Environment]::SetEnvironmentVariable($v[0], $v[1]) } }
-```
-
-Required variables: `DB2_SRC_USER`, `DB2_SRC_PASSWORD`, `DB2_TGT_USER`, `DB2_TGT_PASSWORD`.
-
-### 3. Config
-
-Edit `scripts/db_recon/db2_recon_config.yaml`:
-- Set `driver.jar` to the absolute path of `db2jcc4.jar`.
-- Set `connections.source.jdbc_url` / `connections.target.jdbc_url` and both `schema` values.
-- **Confirm each table's `key_columns` against `SYSCAT.KEYCOLUSE`** — the shipped values are best guesses.
-
-## Output location
-
-Dated run folders land under the project data directory by default:
-
-```
-data/db_recon/<YYYY-MM-DD>/
-```
-
-This is controlled by `output.data_dir` in `db2_recon_config.yaml` (resolved relative
-to the config file). Override at invocation with `--base-dir /some/other/path`.
-
-## Run
-
-```bash
-# Preview the exact SQL sent to DB2 — no connection needed, good for sign-off:
-npm run recon:dry-run
-# or directly:
-python3 scripts/db_recon/db2_extract.py --config scripts/db_recon/db2_recon_config.yaml --dry-run
-
-# Print the resolved output folder (no connection, no files written):
-npm run recon:path
-
-# Full daily run — extract + compare, output under data/db_recon/<today>/:
+# From repo root
 npm run recon:daily
 # or directly:
-python3 scripts/db_recon/run_daily_recon.py --config scripts/db_recon/db2_recon_config.yaml
-
-# Override output location:
-python3 scripts/db_recon/run_daily_recon.py \
-    --config scripts/db_recon/db2_recon_config.yaml \
-    --base-dir /custom/path
-
-# Or run the two steps separately:
-python3 scripts/db_recon/db2_extract.py   --config scripts/db_recon/db2_recon_config.yaml --output-dir data/db_recon/2026-07-01
-python3 scripts/db_recon/recon_compare.py --config scripts/db_recon/db2_recon_config.yaml --folder    data/db_recon/2026-07-01
+python scripts/db_recon/run_daily_recon.py --config scripts/db_recon/db2_recon_config.yaml
 ```
 
-Exit code `0` = all tables PASS, `2` = at least one BREAK — wire the `2` into
-cron/Airflow/Control-M alerting.
+Output: `data/db_recon/<YYYY-MM-DD>/index.html`  
+Exit code: **0** = all PASS, **2** = at least one BREAK.
 
-## Comparison metrics (per table, in `*__metrics.json` and `recon_summary.csv`)
+## Other commands
 
-rows source/target, duplicate keys per side, matched keys, only-in-source,
-only-in-target, hash matches, hash mismatches, match-rate %, and PASS/BREAK.
+| Command | Effect |
+|---|---|
+| `npm run recon:dry-run` | Print SQL for all 12 tables — no DB connection |
+| `npm run recon:path` | Print the resolved output folder path |
+| `npm run recon:compare` | Re-run comparison on existing CSVs (skip extract) |
+| `npm run recon:test` | Run property tests + golden fixtures (no DB needed) |
 
-## Traceability
+## Single-table runs
 
-Every break file carries the **anchor** columns (ORDER_ID / FILL_ID /
-CONTRACT_ID), so a break in a child table like `ENRICHED_EXECUTION_DERIVED`
-surfaces the FILL/ORDER to investigate.
-
-## Detail mode — from "which rows broke" to "which fields differ"
-
-The daily extract is intentionally lightweight (`key + anchor + hash`), so it
-tells you *which* rows broke, not *which columns*. Two detail modes re-pull the
-**full rows** from both DB2s for just the broken rows and produce a cell-level
-diff — from the same config, no separate tool.
-
-**By break list** — re-pull every broken key found in a folder's break files:
 ```bash
-python db2_extract.py --config db2_recon_config.yaml \
-    --folder ./recon/2026-07-01 --detail-keys --tolerance 0.001
-# optionally restrict:  --only-table ORDER_FILL
+python scripts/db_recon/run_daily_recon.py \
+  --config scripts/db_recon/db2_recon_config.yaml \
+  --only-table FILL
 ```
-Writes per table: `<TABLE>__detail_source.csv`, `<TABLE>__detail_target.csv`,
-`<TABLE>__detail_diff.csv` (long format: key, column, value_source,
-value_target), and `<TABLE>__detail_summary.json`.
 
-**By entity** — investigate one order/fill/contract across every table that
-carries that anchor:
-```bash
-python db2_extract.py --config db2_recon_config.yaml \
-    --folder ./recon/2026-07-01 --detail-entity ORDER_ID=100234
+## Output structure
+
 ```
-Writes `<TABLE>__entity_source/target.csv` and `<TABLE>__entity_diff.csv` for
-each related table — the full lifecycle of one broken entity, both sides.
+data/db_recon/
+  manifest.json                    ← read by the AI-Tools tab (run history)
+  2026-07-21/
+    index.html                     ← self-contained single-file report
+    FILL_metrics.json
+    FILL_breaks.csv
+    ENTITY_metrics.json
+    ...
+```
 
-Both modes apply the config's `exclude_columns` and an optional `--tolerance`
-so the diff shows real business differences, not formatting noise.
+## Key column status
 
-## Before you trust the numbers
+| Table | Keys | Status |
+|---|---|---|
+| ORDER | ORDER_ID, ORDER_VID | CONFIRMED |
+| ORDER_FILL | ORDER_ID, ORDER_VID, FILL_ID, FILL_VID | CONFIRMED |
+| FILL | FILL_ID, FILL_VID | CONFIRMED |
+| ORDER_PARENT | ORDER_ID, ORDER_VID | **UNCONFIRMED** |
+| ORDER_OUTGOING | ORDER_ID, ORDER_VID | **UNCONFIRMED** |
+| ORDER_INCOMING | ORDER_ID, ORDER_VID | **UNCONFIRMED** |
+| ORDER_COMMENT | ORDER_ID, ORDER_VID, COMMENT_SEQ | **UNCONFIRMED** |
+| ORDER_GROUP_MEMBER | GROUP_ID, ORDER_ID, ORDER_VID | **UNCONFIRMED** |
+| ORDER_INST_ALL | ORDER_ID, ORDER_VID, INST_SEQ | **UNCONFIRMED** |
+| ENRICHED_EXECUTION | EXECUTION_ID, EXECUTION_VID | **UNCONFIRMED** |
+| ENRICHED_EXECUTION_DERIVED | EXECUTION_ID, EXECUTION_VID | **UNCONFIRMED** |
+| ST_CONTRACT | CONTRACT_ID, CONTRACT_VID | **UNCONFIRMED** |
 
-1. Confirm `key_columns` are actually unique — the tool flags duplicate keys,
-   which invalidate everything downstream if present.
-2. Confirm the SHA256 algorithm constant on your platform
-   (`SELECT HEX(HASH('ABC', 2)) FROM SYSIBM.SYSDUMMY1`). Both sides use it
-   identically, so this is a correctness nicety, not a break risk.
-3. Keep `exclude_columns` current — migration audit/ETL fields (load timestamps,
-   batch ids, row versions) differ by design and must be excluded from the hash.
-4. BLOB/XML/binary columns are auto-excluded with a warning; handle them
-   explicitly if they carry business data.
+Confirm UNCONFIRMED keys against `SYSCAT.KEYCOLUSE` before a production run. Use `--dry-run` to review the generated SQL first.
+
+## Pipeline flow
+
+```
+db2_extract.py      →  <TABLE>__source.csv + <TABLE>__target.csv
+recon_fast.py       →  per-table HTML, payload.json, metrics.json, breaks.csv
+recon_entities.py   →  ENTITY_metrics.json (ORDER / ORDER_FILL / FILL)
+recon_bundle.py     →  index.html (single file, all data inlined)
+manifest.json       →  updated in data/db_recon/ root
 ```

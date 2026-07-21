@@ -1,22 +1,15 @@
 # db2_recon_config.yaml
 # =====================================================================
-# Shared config for db2_extract.py and recon_compare.py.
+# Shared config for the DB2 reconciliation pipeline.
 #
-# Passwords are NEVER stored here. Set them as environment variables named
-# below (user_env / password_env) before running the extractor, e.g.:
-#     export DB2_SRC_USER=...   export DB2_SRC_PASSWORD=...
-#     export DB2_TGT_USER=...   export DB2_TGT_PASSWORD=...
+# Credentials are NEVER stored here. Set env vars before running:
+#   export DB2_SRC_USER=...      export DB2_SRC_PASSWORD=...
+#   export DB2_TGT_USER=...      export DB2_TGT_PASSWORD=...
 # =====================================================================
-
-# Where dated run folders land by default.
-# Resolved relative to this config file's directory at runtime.
-# Override at invocation with --base-dir.
-output:
-  data_dir: ../../data/db_recon
 
 driver:
   class: com.ibm.db2.jcc.DB2Driver
-  jar:   /opt/db2/db2jcc4.jar          # the same driver DBArtisan/SQuirreL use
+  jar:   /opt/db2/db2jcc4.jar        # same JAR used by DBArtisan / SQuirreL
 
 connections:
   source:
@@ -31,75 +24,136 @@ connections:
     schema:       MYSCHEMA
 
 hash:
-  algorithm:   2                # 2 = SHA256 on z/OS Db2 12; VERIFY the constant
-                                # on your platform. Both sides use it identically
-                                # so even a different constant still reconciles.
-  delimiter:   "|~|"            # must not occur in the data
-  decimal_cast: "DECIMAL(31,8)" # fixed scale => 300.1 and 300.10 hash the same
+  algorithm:    2                    # 2 = SHA256 on z/OS Db2 12
+  delimiter:    "|~|"                # must not appear in the data
+  decimal_cast: "DECIMAL(31,8)"      # 300.1 and 300.10 hash identically
 
-# ---------------------------------------------------------------------
-# One block per table. key_columns drive the join; anchor_columns are
-# surfaced in every break file so you can trace to the ORDER/FILL/CONTRACT.
-# CONFIRM key_columns against SYSCAT.KEYCOLUSE -- values below are guesses.
-# exclude_columns: audit/ETL fields that legitimately differ post-migration.
-# ---------------------------------------------------------------------
+output:
+  data_dir: ../../data/db_recon      # resolved relative to this config file
+
+# -----------------------------------------------------------------------
+# Named derived-display-column templates.
+# Per-table, set  flow: <name>  to attach one template to that table.
+# Columns in {BRACES} are substituted per row; missing columns → the
+# template is silently skipped (never causes a break to be missed).
+# -----------------------------------------------------------------------
+flow_templates:
+  FLOW:
+    label:    FLOW
+    template: "{APP_CODE}-> {DEST_ID} -> {SUB_DEST_ID} -> {MIC_CODE}"
+    anchor:   MIC_CODE
+  ORDER_FLOW:
+    label:    ORDER_FLOW
+    template: "{APP_CODE}-> {DEST_ID} -> {SUB_DEST_ID} ->  ({ORDER_MGMT_SYS_CODE})"
+    anchor:   ORDER_MGMT_SYS_CODE
+
+# -----------------------------------------------------------------------
+# Tables — one block each.
+#
+# key_columns   : columns that form the unique row key (identity + version).
+#                 Columns ending _VID / _VERSION / _VER are treated as the
+#                 VERSION component; the rest are IDENTITY.  Override with
+#                 version_columns: [...] if the naming convention doesn't hold.
+# anchor_columns: additional columns surfaced in every break file for tracing.
+# exclude_columns: audit / ETL fields that legitimately differ post-migration.
+# flow          : name of a flow_template above (optional).
+# n_buckets     : Merkle bucket count (default 256). Raise for very large tables.
+# n_groups      : column-group count (default 8). Raise for very wide tables.
+#
+# Keys marked CONFIRMED were verified against SYSCAT.KEYCOLUSE.
+# Keys marked UNCONFIRMED are derived from naming convention — confirm before
+# using in a production run (run --dry-run to review SQL first).
+# -----------------------------------------------------------------------
 tables:
+
+  # ---- CONFIRMED KEYS ------------------------------------------------
+
   - name: ORDER
-    key_columns:     [ORDER_ID]
+    key_columns:     [ORDER_ID, ORDER_VID]   # CONFIRMED
     anchor_columns:  [ORDER_ID]
     exclude_columns: [LAST_UPDATE_TS, ETL_BATCH_ID, ROW_VERSION]
+    flow:            ORDER_FLOW
+    n_buckets:       256
+    n_groups:        16                      # 410 columns → more groups = finer localisation
 
   - name: ORDER_FILL
-    key_columns:     [ORDER_ID, FILL_ID]
+    key_columns:     [ORDER_ID, ORDER_VID, FILL_ID, FILL_VID]  # CONFIRMED
     anchor_columns:  [ORDER_ID, FILL_ID]
     exclude_columns: [LAST_UPDATE_TS]
+    flow:            FLOW
+    n_buckets:       256
+    n_groups:        8
 
   - name: FILL
-    key_columns:     [FILL_ID]
+    key_columns:     [FILL_ID, FILL_VID]     # CONFIRMED
     anchor_columns:  [FILL_ID]
     exclude_columns: [LAST_UPDATE_TS]
+    flow:            FLOW
+    n_buckets:       256
+    n_groups:        8
+
+  # ---- UNCONFIRMED KEYS — run --dry-run and confirm with DBA ---------
 
   - name: ORDER_PARENT
-    key_columns:     [ORDER_ID]
+    key_columns:     [ORDER_ID, ORDER_VID]   # UNCONFIRMED — check SYSCAT.KEYCOLUSE
     anchor_columns:  [ORDER_ID, PARENT_ORDER_ID]
     exclude_columns: [LAST_UPDATE_TS]
+    n_buckets:       256
+    n_groups:        8
 
   - name: ORDER_OUTGOING
-    key_columns:     [ORDER_ID]
+    key_columns:     [ORDER_ID, ORDER_VID]   # UNCONFIRMED — may have OUTGOING_SEQ
     anchor_columns:  [ORDER_ID]
     exclude_columns: [LAST_UPDATE_TS]
+    n_buckets:       256
+    n_groups:        8
 
   - name: ORDER_INCOMING
-    key_columns:     [ORDER_ID]
+    key_columns:     [ORDER_ID, ORDER_VID]   # UNCONFIRMED — may have INCOMING_SEQ
     anchor_columns:  [ORDER_ID]
     exclude_columns: [LAST_UPDATE_TS]
+    n_buckets:       256
+    n_groups:        8
 
   - name: ORDER_COMMENT
-    key_columns:     [ORDER_ID, COMMENT_SEQ]
+    key_columns:     [ORDER_ID, ORDER_VID, COMMENT_SEQ]   # UNCONFIRMED — COMMENT_VID?
     anchor_columns:  [ORDER_ID]
     exclude_columns: [LAST_UPDATE_TS]
+    n_buckets:       256
+    n_groups:        8
 
   - name: ORDER_GROUP_MEMBER
-    key_columns:     [GROUP_ID, ORDER_ID]
+    key_columns:     [GROUP_ID, ORDER_ID, ORDER_VID]      # UNCONFIRMED — GROUP_VID?
     anchor_columns:  [ORDER_ID, GROUP_ID]
     exclude_columns: [LAST_UPDATE_TS]
+    n_buckets:       256
+    n_groups:        8
 
   - name: ORDER_INST_ALL
-    key_columns:     [ORDER_ID, INST_SEQ]
+    key_columns:     [ORDER_ID, ORDER_VID, INST_SEQ]      # UNCONFIRMED — INST_VID?
     anchor_columns:  [ORDER_ID]
     exclude_columns: [LAST_UPDATE_TS]
+    n_buckets:       256
+    n_groups:        8
 
   - name: ENRICHED_EXECUTION
-    key_columns:     [EXECUTION_ID]
+    key_columns:     [EXECUTION_ID, EXECUTION_VID]        # UNCONFIRMED — or EXECUTION_ID+FILL_ID?
     anchor_columns:  [EXECUTION_ID, FILL_ID]
     exclude_columns: [LAST_UPDATE_TS]
+    flow:            FLOW
+    n_buckets:       256
+    n_groups:        8
 
   - name: ENRICHED_EXECUTION_DERIVED
-    key_columns:     [EXECUTION_ID]
+    key_columns:     [EXECUTION_ID, EXECUTION_VID]        # UNCONFIRMED — same as parent?
     anchor_columns:  [EXECUTION_ID, FILL_ID]
     exclude_columns: [LAST_UPDATE_TS]
+    n_buckets:       256
+    n_groups:        8
 
   - name: ST_CONTRACT
-    key_columns:     [CONTRACT_ID]
+    key_columns:     [CONTRACT_ID, CONTRACT_VID]          # UNCONFIRMED — CONTRACT_VID exists?
     anchor_columns:  [CONTRACT_ID]
     exclude_columns: [LAST_UPDATE_TS]
+    n_buckets:       256
+    n_groups:        8
