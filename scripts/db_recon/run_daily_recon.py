@@ -315,12 +315,15 @@ def main():
                     help="Print generated SQL for all tables; do not connect to DB2")
     ap.add_argument("--print-path",   action="store_true",
                     help="Print the resolved output folder and exit")
+    ap.add_argument("--folder",       default=None,
+                    help="Exact output folder (overrides date-based path calculation)")
     ap.add_argument("--skip-extract", action="store_true",
                     help="Skip DB2 extraction; compare existing CSVs in today's folder")
     args = ap.parse_args()
 
     cfg = load_config(args.config)
-    folder = resolve_folder(args.base_dir, args.config, cfg)
+    folder = (os.path.abspath(args.folder) if args.folder
+              else resolve_folder(args.base_dir, args.config, cfg))
 
     if args.print_path:
         print(os.path.abspath(folder))

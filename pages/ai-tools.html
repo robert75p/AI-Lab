@@ -990,6 +990,60 @@ body::after {
     height:100%; border-radius:2px; background:linear-gradient(90deg,#14B8A6,#38BDF8);
     transition:width 0.8s cubic-bezier(0.16,1,0.3,1);
   }
+  /* Upload section */
+  .dbr-upload-grid { display:flex; flex-direction:column; gap:7px; padding:12px 16px 8px; }
+  .dbr-upload-row {
+    display:grid; grid-template-columns:130px 1fr 1fr; gap:10px; align-items:center;
+  }
+  .dbr-upload-tbl {
+    font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:.08em; color:#14B8A6;
+  }
+  .dbr-upload-cell { display:flex; flex-direction:column; gap:3px; }
+  .dbr-upload-cell label {
+    font-family:'JetBrains Mono',monospace; font-size:8px; letter-spacing:.1em; color:#ecf0f7;
+  }
+  .dbr-upload-cell input[type=file] {
+    font-family:'JetBrains Mono',monospace; font-size:9.5px; color:#94a3b8;
+    background:#060e1c; border:1px solid rgba(37,99,235,0.2); border-radius:4px;
+    padding:4px 8px; width:100%; cursor:pointer;
+  }
+  .dbr-upload-cell input[type=file]:hover { border-color:rgba(20,184,166,0.4); }
+  .dbr-upload-cell input[type=file]::file-selector-button {
+    font-family:'JetBrains Mono',monospace; font-size:8.5px; letter-spacing:.06em;
+    background:rgba(37,99,235,0.15); color:#38BDF8; border:1px solid rgba(37,99,235,0.35);
+    border-radius:3px; padding:2px 7px; cursor:pointer; margin-right:8px;
+  }
+  .dbr-upload-cell input[type=file]::file-selector-button:hover { background:rgba(37,99,235,0.28); }
+  .dbr-upload-actions {
+    display:flex; align-items:center; gap:10px; padding:10px 16px 14px;
+    border-top:1px solid rgba(255,255,255,0.05); margin-top:4px;
+  }
+  .dbr-btn {
+    font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:.1em;
+    padding:7px 18px; border-radius:5px; cursor:pointer; border:none;
+    transition:opacity 0.15s, background 0.15s;
+  }
+  .dbr-btn:disabled { opacity:.4; cursor:not-allowed; }
+  .dbr-btn-submit {
+    background:rgba(37,99,235,0.18); color:#38BDF8;
+    border:1px solid rgba(37,99,235,0.4);
+  }
+  .dbr-btn-submit:hover:not(:disabled) { background:rgba(37,99,235,0.32); }
+  .dbr-btn-execute {
+    background:rgba(20,184,166,0.15); color:#14B8A6;
+    border:1px solid rgba(20,184,166,0.4);
+  }
+  .dbr-btn-execute:hover:not(:disabled) { background:rgba(20,184,166,0.28); }
+  .dbr-upload-status {
+    font-family:'JetBrains Mono',monospace; font-size:9.5px; flex:1;
+  }
+  .dbr-upload-status.ok   { color:#14B8A6; }
+  .dbr-upload-status.err  { color:#ef4444; }
+  .dbr-upload-status.info { color:#38BDF8; }
+  .dbr-exec-log {
+    max-height:130px; overflow-y:auto; padding:8px 16px 10px; font-family:'JetBrains Mono',monospace;
+    font-size:9.5px; color:#94a3b8; line-height:1.65; white-space:pre-wrap; word-break:break-all;
+  }
   </style>
 
   <div class="dbr-wrap">
@@ -1009,6 +1063,57 @@ body::after {
 
     <!-- Main area -->
     <div class="dbr-main">
+
+      <!-- Upload / Execute panel -->
+      <div class="dbr-panel-box" id="dbr-upload-box">
+        <div class="dbr-panel-hd">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          UPLOAD FILES
+          <span style="font-size:9px;color:#94a3b8;letter-spacing:.04em;">ORDER &middot; ORDER_FILL &middot; FILL</span>
+        </div>
+        <div class="dbr-upload-grid">
+          <div class="dbr-upload-row">
+            <div class="dbr-upload-tbl">ORDER</div>
+            <div class="dbr-upload-cell">
+              <label>SOURCE CSV</label>
+              <input type="file" id="dbr-file-order-src" accept=".csv">
+            </div>
+            <div class="dbr-upload-cell">
+              <label>TARGET CSV</label>
+              <input type="file" id="dbr-file-order-tgt" accept=".csv">
+            </div>
+          </div>
+          <div class="dbr-upload-row">
+            <div class="dbr-upload-tbl">ORDER_FILL</div>
+            <div class="dbr-upload-cell">
+              <label>SOURCE CSV</label>
+              <input type="file" id="dbr-file-of-src" accept=".csv">
+            </div>
+            <div class="dbr-upload-cell">
+              <label>TARGET CSV</label>
+              <input type="file" id="dbr-file-of-tgt" accept=".csv">
+            </div>
+          </div>
+          <div class="dbr-upload-row">
+            <div class="dbr-upload-tbl">FILL</div>
+            <div class="dbr-upload-cell">
+              <label>SOURCE CSV</label>
+              <input type="file" id="dbr-file-fill-src" accept=".csv">
+            </div>
+            <div class="dbr-upload-cell">
+              <label>TARGET CSV</label>
+              <input type="file" id="dbr-file-fill-tgt" accept=".csv">
+            </div>
+          </div>
+        </div>
+        <div class="dbr-upload-actions">
+          <button class="dbr-btn dbr-btn-submit" id="dbr-btn-submit" onclick="dbrSubmitFiles()">SUBMIT</button>
+          <button class="dbr-btn dbr-btn-execute" id="dbr-btn-execute" onclick="dbrExecute()" disabled>EXECUTE</button>
+          <span class="dbr-upload-status" id="dbr-upload-status"></span>
+        </div>
+        <div class="dbr-exec-log" id="dbr-exec-log" style="display:none;border-top:1px solid rgba(255,255,255,0.05);"></div>
+      </div>
+
       <div class="dbr-stat-row">
         <div class="dbr-stat-card">
           <div class="dbr-stat-lbl">TABLES</div>
@@ -1278,6 +1383,112 @@ function switchTab(id, el) {
       + 'border-radius:3px;cursor:pointer;white-space:nowrap;'
       + '" onmouseover="this.style.background=\'rgba(20,184,166,.12)\'" onmouseout="this.style.background=\'\'">OPEN REPORT &#x2197;</a>';
   }
+
+  // ── Upload / Execute ──────────────────────────────────────────────────────
+  var dbrUploadedFolder = null;
+
+  function readFileAsBase64(file) {
+    return new Promise(function(resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function(e) { resolve(e.target.result.split(',')[1]); };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function setUploadStatus(msg, cls) {
+    var el = document.getElementById('dbr-upload-status');
+    if (!el) return;
+    el.textContent = msg;
+    el.className = 'dbr-upload-status ' + (cls || '');
+  }
+
+  window.dbrSubmitFiles = function() {
+    var map = [
+      { id: 'dbr-file-order-src', slot: 'ORDER__source'      },
+      { id: 'dbr-file-order-tgt', slot: 'ORDER__target'      },
+      { id: 'dbr-file-of-src',    slot: 'ORDER_FILL__source' },
+      { id: 'dbr-file-of-tgt',    slot: 'ORDER_FILL__target' },
+      { id: 'dbr-file-fill-src',  slot: 'FILL__source'       },
+      { id: 'dbr-file-fill-tgt',  slot: 'FILL__target'       },
+    ];
+    var files = map.map(function(m) {
+      var el = document.getElementById(m.id);
+      return (el && el.files[0]) ? { el: el.files[0], slot: m.slot } : null;
+    }).filter(Boolean);
+
+    if (!files.length) {
+      setUploadStatus('Select at least one CSV file before submitting.', 'err');
+      return;
+    }
+    var btn = document.getElementById('dbr-btn-submit');
+    btn.disabled = true;
+    setUploadStatus('Uploading…', 'info');
+
+    Promise.all(files.map(function(f) {
+      return readFileAsBase64(f.el).then(function(b64) {
+        return { slot: f.slot, content_b64: b64 };
+      });
+    })).then(function(payloadFiles) {
+      return fetch('/recon/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ files: payloadFiles }),
+      });
+    }).then(function(r) {
+      if (!r.ok) return r.text().then(function(t) { throw new Error(t || 'HTTP ' + r.status); });
+      return r.json();
+    }).then(function(data) {
+      btn.disabled = false;
+      dbrUploadedFolder = data.folder;
+      setUploadStatus('✓ ' + data.saved.length + ' file(s) saved — ' + data.date, 'ok');
+      document.getElementById('dbr-btn-execute').disabled = false;
+    }).catch(function(e) {
+      btn.disabled = false;
+      setUploadStatus('Upload failed: ' + e.message, 'err');
+    });
+  };
+
+  window.dbrExecute = function() {
+    if (!dbrUploadedFolder) { setUploadStatus('Submit files first.', 'err'); return; }
+    var exBtn  = document.getElementById('dbr-btn-execute');
+    var subBtn = document.getElementById('dbr-btn-submit');
+    var logEl  = document.getElementById('dbr-exec-log');
+    exBtn.disabled  = true;
+    subBtn.disabled = true;
+    logEl.style.display = '';
+    logEl.textContent = 'Running pipeline…\n';
+    setUploadStatus('Executing…', 'info');
+
+    fetch('/recon/execute', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ folder: dbrUploadedFolder }),
+    }).then(function(r) {
+      if (!r.ok) return r.text().then(function(t) { throw new Error(t || 'HTTP ' + r.status); });
+      return r.json();
+    }).then(function(data) {
+      exBtn.disabled  = false;
+      subBtn.disabled = false;
+      var text = (data.logs || []).map(function(l) { return l.t; }).join('');
+      logEl.textContent = text || '(no output)';
+      logEl.scrollTop   = logEl.scrollHeight;
+      var code = data.exit_code;
+      if (code === 0 || code === 2) {
+        setUploadStatus(code === 0 ? '✓ PASS — all tables clean' : '⚠ BREAK — diffs detected', code === 0 ? 'ok' : 'err');
+        // Reset so initDbrecon re-fetches the updated manifest
+        dbrInited = false;
+        initDbrecon();
+      } else {
+        setUploadStatus('Pipeline error (exit ' + code + ')', 'err');
+      }
+    }).catch(function(e) {
+      exBtn.disabled  = false;
+      subBtn.disabled = false;
+      setUploadStatus('Execute failed: ' + e.message, 'err');
+    });
+  };
+
 })();
 
 // ââ JSON Builder ââ

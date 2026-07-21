@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import crypto from 'crypto';
+import { spawn } from 'child_process';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = 3000;
@@ -54,8 +55,38 @@ function redirectToLogin(res, nextUrl) {
   res.end();
 }
 
-const CONFIG_DIR = path.join(__dirname, 'config');
+const CONFIG_DIR  = path.join(__dirname, 'config');
 if (!fs.existsSync(CONFIG_DIR)) fs.mkdirSync(CONFIG_DIR);
+
+const PYTHON = process.platform === 'win32' ? 'python' : 'python3';
+
+// Canonical filenames the pipeline expects, keyed by slot name sent from the browser
+const RECON_SLOT_MAP = {
+  'ORDER__source':      'ORDER__source.csv',
+  'ORDER__target':      'ORDER__target.csv',
+  'ORDER_FILL__source': 'ORDER_FILL__source.csv',
+  'ORDER_FILL__target': 'ORDER_FILL__target.csv',
+  'FILL__source':       'FILL__source.csv',
+  'FILL__target':       'FILL__target.csv',
+};
+
+function todayUTC() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function readBody(req, maxBytes = 64 * 1024 * 1024) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    let total = 0;
+    req.on('data', chunk => {
+      total += chunk.length;
+      if (total > maxBytes) { req.destroy(); reject(new Error('Request too large')); }
+      else chunks.push(chunk);
+    });
+    req.on('end', () => resolve(Buffer.concat(chunks)));
+    req.on('error', reject);
+  });
+}
 
 const server = http.createServer((req, res) => {
   let urlPath = req.url.split('?')[0];
@@ -126,6 +157,75 @@ const server = http.createServer((req, res) => {
         res.writeHead(400, { 'Content-Type': 'text/plain' });
         res.end('Invalid JSON');
       }
+    });
+    return;
+  }
+
+  // POST /recon/upload — save CSV pairs to data/db_recon/<today>/
+  if (req.method === 'POST' && urlPath === '/recon/upload') {
+    if (!isAuthenticated(req)) {
+      res.writeHead(401, { 'Content-Type': 'text/plain' }); res.end('Unauthorized'); return;
+    }
+    readBody(req).then(buf => {
+      const payload = JSON.parse(buf.toString());
+      const date    = todayUTC();
+      const dir     = path.join(__dirname, 'data', 'db_recon', date);
+      fs.mkdirSync(dir, { recursive: true });
+
+      const saved = [];
+      for (const f of (payload.files || [])) {
+        const canonical = RECON_SLOT_MAP[f.slot];
+        if (!canonical) {
+          res.writeHead(400, { 'Content-Type': 'text/plain' });
+          res.end(`Unknown slot: ${f.slot}`); return;
+        }
+        fs.writeFileSync(path.join(dir, canonical), Buffer.from(f.content_b64, 'base64'));
+        saved.push(canonical);
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, date, folder: dir, saved }));
+    }).catch(e => {
+      res.writeHead(400, { 'Content-Type': 'text/plain' }); res.end('Upload error: ' + e.message);
+    });
+    return;
+  }
+
+  // POST /recon/execute — run comparison pipeline on an already-uploaded folder
+  if (req.method === 'POST' && urlPath === '/recon/execute') {
+    if (!isAuthenticated(req)) {
+      res.writeHead(401, { 'Content-Type': 'text/plain' }); res.end('Unauthorized'); return;
+    }
+    readBody(req).then(buf => {
+      const { folder } = JSON.parse(buf.toString());
+      // Validate: folder must be inside data/db_recon/ and end with YYYY-MM-DD
+      const absFolder = path.resolve(folder);
+      const reconRoot = path.resolve(path.join(__dirname, 'data', 'db_recon'));
+      if (!absFolder.startsWith(reconRoot) || !/\d{4}-\d{2}-\d{2}$/.test(absFolder)) {
+        res.writeHead(400, { 'Content-Type': 'text/plain' }); res.end('Invalid folder'); return;
+      }
+
+      const orchestrator = path.join(__dirname, 'scripts', 'db_recon', 'run_daily_recon.py');
+      const config       = path.join(__dirname, 'scripts', 'db_recon', 'db2_recon_config.yaml');
+      const logs = [];
+
+      const child = spawn(PYTHON, [
+        orchestrator,
+        '--config',       config,
+        '--folder',       absFolder,
+        '--skip-extract',
+      ], { cwd: __dirname });
+
+      child.stdout.on('data', d => logs.push({ s: 'out', t: d.toString() }));
+      child.stderr.on('data', d => logs.push({ s: 'err', t: d.toString() }));
+      child.on('close', code => {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: code === 0 || code === 2, exit_code: code, logs }));
+      });
+      child.on('error', e => {
+        res.writeHead(500, { 'Content-Type': 'text/plain' }); res.end('Spawn error: ' + e.message);
+      });
+    }).catch(e => {
+      res.writeHead(400, { 'Content-Type': 'text/plain' }); res.end('Execute error: ' + e.message);
     });
     return;
   }

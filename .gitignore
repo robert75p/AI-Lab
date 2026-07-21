@@ -4,9 +4,11 @@ node_modules/
 # Secrets — never commit real credentials
 .env
 
-# Recon output: dated run folders and their CSV/JSON outputs.
+# Recon output: dated run folders, manifest, and raw mock data.
 # Keep the directory itself tracked via .gitkeep; ignore generated content.
 data/db_recon/????-??-??/
+data/db_recon/manifest.json
+data/Athena_mig/
 
 # Python bytecode
 *.pyc
